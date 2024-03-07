@@ -1,6 +1,6 @@
 {
 	"id": "task-warrior-obsidian",
-	"name": "Task Warrior obsidian",
+	"name": "TaskWarrior Obsidian",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Wrapper and integration around TaskWarrior for obsidian",
