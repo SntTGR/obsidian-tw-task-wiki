@@ -3,6 +3,7 @@ import type TWPlugin from './main';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as nt from 'neverthrow';
+import { Notice } from 'obsidian';
 
 const asyncExec = promisify(exec);
 
@@ -56,15 +57,17 @@ export default class TaskHandler {
         return { report: result.value, timestamp };
     }
 
-    async getTask(uuid: string) {
-        
-    }
-
     async createTask(command: string) {
-        const result = await this.execTW(`add ${command}`);
-        if (result.isErr()) return result;
-        this.plugin.emitter!.emit(TaskEvents.REFRESH);
-        return nt.ok(null);
+        return this.execTW(`add ${command}`)
+            .map(v => this.parseCreationModificationOutput(v))
+            .andThen(v => {
+                if (v.length === 0) return nt.err(new Error('No task created'));
+                if (v.length > 1) throw nt.err(new Error('Assertion failed: multiple tasks created'));
+                return nt.ok(v[0]);
+            })
+            .andThen(this.getUuidOfTask)
+            .map(v => { this.notifyToUser(`Task ${v} created!`); return v;})
+            .mapErr(e => { this.notifyToUser(`Error creating task: ${e.message}`, true); return e; });
     }
 
     async modifyTask(uuid: string, command: string) {
@@ -75,6 +78,7 @@ export default class TaskHandler {
     }
     
     async deleteTask(uuid: string) {
+        // NOTE: might need to overload the confirmation
         const result = await this.setTaskStatus(uuid, 'deleted');
         if (result.isErr()) return result;
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
@@ -93,6 +97,20 @@ export default class TaskHandler {
 
     invalidateCache = () => {
         this.reports.clear();
+    }
+
+    private notifyToUser (message: string, error = false) {
+        new Notice(error ? 'Error ' : '' + message, 5000);
+    }
+    
+    private getUuidOfTask (id: string) {
+        return this.execTW(['_get', `${id}.uuid`]);
+        
+    }
+
+    private parseCreationModificationOutput (output: string): string[] {
+        const lines = output.trim().split('\n');
+        return lines.map( l => /task (?<id>[0-9]+)/.exec(lines[0])?.groups?.id ).filter( v => v !== undefined ) as string[];
     }
 
     private execTW = (args: string[] | string): nt.ResultAsync<string, Error> => {

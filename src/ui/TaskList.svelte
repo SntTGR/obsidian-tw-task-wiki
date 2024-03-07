@@ -143,10 +143,6 @@
 		padding-right: 4px;
 	}
 
-	.t-s {
-		font-size: var(--font-small);
-	}
-	
 	.data {
 		overflow-x: auto;
 		min-width: none;
