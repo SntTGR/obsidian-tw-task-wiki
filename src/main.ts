@@ -1,6 +1,6 @@
-import { App, Modal, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import TaskList from './ui/TaskList.svelte';
-import TaskCreate from './ui/TaskCreate.svelte';
+import { CreateTaskModal } from './modals';
 import { TinyEmitter } from 'tiny-emitter';
 import TaskHandler, { TaskEvents } from './task-handler';
 
@@ -81,36 +81,6 @@ export default class TWPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class CreateTaskModal extends Modal {
-	constructor(app: App, plugin: TWPlugin) {
-		super(app);
-		this.plugin = plugin;
-	}
-
-	private plugin: TWPlugin;
-	private ctModal: TaskCreate | undefined;
-
-	onOpen() {
-		const {titleEl, contentEl} = this;
-		
-		titleEl.setText('Create new task');
-
-		this.ctModal = new TaskCreate({
-			target: contentEl,
-			props: {
-				close: () => this.close(),
-				plugin: this.plugin,
-			}
-		})
-	}
-
-	onClose() {
-		this.ctModal?.$destroy();
-		const {contentEl} = this;
-		contentEl.empty();
 	}
 }
 

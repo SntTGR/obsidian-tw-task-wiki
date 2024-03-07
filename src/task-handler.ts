@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type TWPlugin from './main';
-import { exec,  } from 'child_process';
+import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as nt from 'neverthrow';
 
@@ -49,8 +49,6 @@ export default class TaskHandler {
             throw nt.err(result.error);
         }
 
-
-
         // const prevReport = this.reports.get(report);
         // if (prevReport !== undefined && prevReport.timestamp > timestamp) return prevReport;
         // this.reports.set(report, { report: result.value, timestamp })
@@ -64,22 +62,27 @@ export default class TaskHandler {
 
     async createTask(command: string) {
         const result = await this.execTW(`add ${command}`);
-        if (result.isErr()) {
-            console.error(result.error);
-            return nt.err(result.error);
-        }
+        if (result.isErr()) return result;
+        this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
+    }
+
+    async modifyTask(uuid: string, command: string) {
+        const result = await this.execTW(`${uuid} modify ${command}`);
+        if (result.isErr()) return result;
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
         return nt.ok(null);
     }
     
     async deleteTask(uuid: string) {
         const result = await this.setTaskStatus(uuid, 'deleted');
-        result.isErr
+        if (result.isErr()) return result;
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
     }
     
     async completeTask(uuid: string) {
-        this.setTaskStatus(uuid, 'completed');
+        const result = await this.execTW([uuid, 'done']);
+        if (result.isErr()) return result;
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
     }
     

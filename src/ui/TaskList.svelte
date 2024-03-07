@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { Report, TaskEvents } from '../task-handler';
 	import { getIcon } from 'obsidian'
+	import { UpdateTaskModal } from '../modals';
 	
 	import { format } from 'timeago.js';
 	import type TWPlugin from 'src/main';
@@ -65,12 +66,12 @@
 	<!-- Loader -->
 	<div class="loader">
 		<div>
-			{#if timestamp !== undefined }<span class="t-s">updated { formattedAgo }</span>{/if}
+			<span class="unimportant">{ report + ' ' + command }</span>
 		</div>
-		
-		<div>
-			{#if state === 'error'} <span class="error report">error fetching tasks</span> {/if}
-			{#if state === 'loading'} <span class="report">loading...</span> {/if}
+		<div class="refresh-container">
+			{#if state === 'ok' }<span class="report unimportant">updated { formattedAgo }</span>{/if}
+			{#if state === 'error'}<span class="report unimportant error">error fetching tasks</span>{/if}
+			{#if state === 'loading'}<span class="report unimportant">loading...</span> {/if}
 			<button class="refresh-button" on:click={getTasks} bind:this={refreshButton}>{@html getIcon('rotate-cw')?.outerHTML }</button>
 		</div>
 	</div>
@@ -78,9 +79,9 @@
 	<div class="data">
 		{#if reportList !== undefined}
 			{#if reportList.columns.length <= 2}
-				<span>Report does not seem to exist.</span>
+				<div class="padder error"><span>Report does not seem to exist.</span></div>
 			{:else if reportList.tasks.length === 0}
-				<span>No tasks found in report.</span>
+				<div class="padder error"><span>No tasks found in report.</span></div>
 			{:else}
 				<table class="tw-table">
 					<thead>
@@ -96,7 +97,7 @@
 							<tr>
 								<td> <input type="checkbox" checked={task.status === 'Completed'} on:change={e => isChecked(e) ? plugin.handler?.completeTask(task.uuid) : plugin.handler?.undoTask(task.uuid)} /> </td>
 								{#each task.data as data}
-									<td>{data}</td>
+									<td on:click={ () => { new UpdateTaskModal(plugin.app, plugin, { uuid: task.uuid }).open() } }>{data}</td>
 								{/each}
 							</tr>
 						{/each}
@@ -111,29 +112,41 @@
 <style>
 	.loader {
 		padding: 4px;
-		margin-bottom: 4px;
 		
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+
+		background-color: #00000034;
 	}
+
+	.padder {
+		padding: 8px;
+	}
+
+	.error {
+		color: lightcoral;
+	}
+
+	.unimportant {
+		color: var(--color-comment);
+		font-size: var(--font-smallest);
+	}
+
+	.refresh-container {
+		display: flex;
+		align-items: center;
+	}
+
 	.report {
 		padding-left: 4px;
 		padding-right: 4px;
-		color: var(--color-comment);
-		font-size: var(--font-smallest);
 	}
 
 	.t-s {
 		font-size: var(--font-small);
 	}
-	.t-st {
-		font-size: var(--font-smaller);
-	}
-	.t-xs {
-		font-size: var(--font-smallest);
-	}
-
+	
 	.data {
 		overflow-x: auto;
 		min-width: none;
@@ -141,6 +154,8 @@
 	.tw-table {
 		width: 100%;
 		border-collapse: collapse;
+
+		margin: 0;
 		border: 0;
 	}
 	.tw-table th, .tw-table td {
