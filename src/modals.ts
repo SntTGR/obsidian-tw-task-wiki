@@ -17,13 +17,12 @@ export class CreateTaskModal extends TWPModal {
 
 	onOpen() {
 		const {titleEl, contentEl} = this;
-		titleEl.setText('Create new task');
-
 		this.ctModal = new TaskCreate({
 			target: contentEl,
 			props: {
 				close: () => this.close(),
 				plugin: this.plugin,
+				titleElement: titleEl
 			}
 		})
 	}
@@ -51,14 +50,13 @@ export class UpdateTaskModal extends TWPModal {
 	onOpen() {
 		const {titleEl, contentEl} = this;
 		
-		titleEl.setText('Update task');
-
 		this.ctModal = new TaskModify({
 			target: contentEl,
 			props: {
 				close: () => this.close(),
 				plugin: this.plugin,
-                task: this.task
+                task: this.task,
+				titleElement: titleEl
 			}
 		})
 	}

@@ -57,7 +57,7 @@ export default class TaskHandler {
         return { report: result.value, timestamp };
     }
 
-    async createTask(command: string) {
+    createTask(command: string): nt.ResultAsync<string, Error> {
         return this.execTW(`add ${command}`)
             .map(v => this.parseCreationModificationOutput(v))
             .andThen(v => {
@@ -65,9 +65,7 @@ export default class TaskHandler {
                 if (v.length > 1) throw nt.err(new Error('Assertion failed: multiple tasks created'));
                 return nt.ok(v[0]);
             })
-            .andThen(this.getUuidOfTask)
-            .map(v => { this.notifyToUser(`Task ${v} created!`); return v;})
-            .mapErr(e => { this.notifyToUser(`Error creating task: ${e.message}`, true); return e; });
+            .andThen((v) => this.getUuidOfTask(v));
     }
 
     async modifyTask(uuid: string, command: string) {
@@ -99,18 +97,13 @@ export default class TaskHandler {
         this.reports.clear();
     }
 
-    private notifyToUser (message: string, error = false) {
-        new Notice(error ? 'Error ' : '' + message, 5000);
-    }
-    
     private getUuidOfTask (id: string) {
-        return this.execTW(['_get', `${id}.uuid`]);
-        
+        return this.execTW(['_get', `${id}.uuid`]).map( v => v.trim() );
     }
 
     private parseCreationModificationOutput (output: string): string[] {
-        const lines = output.trim().split('\n');
-        return lines.map( l => /task (?<id>[0-9]+)/.exec(lines[0])?.groups?.id ).filter( v => v !== undefined ) as string[];
+        const lines = output.trim().split(/\n\r?/);
+        return lines.map( l => /task (?<id>[0-9]+)/.exec(lines[0])?.groups?.id ).filter( v => v !== undefined && v !== null ) as string[];
     }
 
     private execTW = (args: string[] | string): nt.ResultAsync<string, Error> => {

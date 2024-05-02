@@ -150,12 +150,13 @@
 	.tw-table {
 		width: 100%;
 		border-collapse: collapse;
+		
 
 		margin: 0;
 		border: 0;
 	}
 	.tw-table th, .tw-table td {
-		min-width: none;
+		min-width: 1ch !important;
 		font-size: var(--font-smaller);
 	}
 

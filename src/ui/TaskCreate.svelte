@@ -1,33 +1,94 @@
 <script lang="ts">
-	import { Notice } from 'obsidian';
+	import { Notice, getIcon } from 'obsidian';
+    import { onMount } from 'svelte';
     import type TWPlugin from 'src/main';
 
 	export let plugin: TWPlugin;
+    export let titleElement: HTMLElement;
     export let close: () => void;
 
-    let input: string;
     let state: 'loading' | 'error' | 'ok' = 'ok';
+    
+    let input: string;
+    let command: string;
+    $: { command = `task add ${input || ''}`; }
+
+    let createdUuid: string | undefined = undefined;
+    
+    let readyToCreate: boolean = false;
+    $: { readyToCreate = state !== 'loading' && input !== undefined && input !== '' }
 
     async function createTask(cmd: string) {
         state = 'loading';
-        const result = await plugin.handler!.createTask(cmd);
-        if (result.isErr()) {
-            state = 'error';
-            console.log(result.error);
-            new Notice('Could not create task!', 5000);
-        } else {
-            state = 'ok';
-        }
+        await plugin.handler!.createTask(cmd).match(
+            (v) => {
+                new Notice(`Task ${v} created.`);
+                createdUuid = v;
+            },
+            (err) => {
+                new Notice(`Error creating task: ${err}`);
+                state = 'error';
+            }
+        );
+    }
+
+    onMount(() => {
+        titleElement.setText('Create New Task');
+    });
+
+    function autoFocus(node: HTMLElement) {
+        console.log('trying to focus', node);
+        node.focus();
+    }
+
+    function closeModal() {
         close();
+    }
+
+    async function copyToClipboard(c: string) {        
+        await navigator.clipboard.writeText(c);
+        new Notice('Copied to clipboard');
     }
 
 </script>
 
-<div>
-    <label for="create-command">Create Task</label>
-    <input id="create-command" type="text" bind:value={input} placeholder="My new task priority:L" />
-    <button disabled={state === 'loading' || input === undefined} on:click={() => createTask(input)}>Create</button>
+<div role="textbox">
+    <label for="create-command">Name and modifiers</label>
+    <input use:autoFocus tabindex="0" id="create-command" on:keyup={(e) => e.key === 'Enter' && readyToCreate && createTask(input)} type="text" bind:value={input} placeholder="My new task priority:L" />
+    <p class="command" id="command-to-run">{command}</p>
+
+    <!-- Hidden if no UUID created -->
+    <div class="actions-container">
+        <button class="uuid-text" class:hidden={!createdUuid} on:click={() => copyToClipboard(createdUuid || '')}> UUID: {createdUuid} <pre> </pre> {@html getIcon('copy')?.outerHTML} </button>
+        <button class="action-button" disabled={!readyToCreate} on:click={() => createTask(input)}>Create</button>
+    </div>
+
 </div>
 
 <style>
+
+    .hidden {
+        display: none;
+    }
+
+    .actions-container {
+        display: flex;
+    }
+
+    .action-button {
+        margin-left: auto;
+    }
+
+    .command {
+        font-family: monospace;
+        font-size: 0.8em;
+        color: var(--text-muted);
+    }
+
+    .uuid-text {
+        font-size: 0.8em;
+        color: var(--text-muted);
+        background-color: var(--background-secondary-alt);
+    }
+
 </style>
