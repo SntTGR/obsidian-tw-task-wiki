@@ -14,6 +14,12 @@ class TWPModal extends Modal {
 
 export class CreateTaskModal extends TWPModal {
 	private ctModal: TaskCreate | undefined;
+	private template?: string;
+
+	constructor(app: App, plugin: TWPlugin, template?: string) {
+		super(app, plugin);
+		this.template = template;
+	}
 
 	onOpen() {
 		const {titleEl, contentEl} = this;
@@ -22,7 +28,8 @@ export class CreateTaskModal extends TWPModal {
 			props: {
 				close: () => this.close(),
 				plugin: this.plugin,
-				titleElement: titleEl
+				titleElement: titleEl,
+				template: this.template,
 			}
 		})
 	}

@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { Report, TaskEvents } from '../task-handler';
 	import { getIcon } from 'obsidian'
-	import { UpdateTaskModal } from '../modals';
+	import { CreateTaskModal, UpdateTaskModal } from '../modals';
 	
 	import { format } from 'timeago.js';
 	import type TWPlugin from 'src/main';
@@ -10,6 +10,7 @@
 	export let plugin: TWPlugin;
 	export let report: string;
 	export let command: string | undefined;
+	export let newTaskTemplate: string | undefined;
 
 	let state: 'loading' | 'error' | 'ok' = 'loading';
 	let reportList: Report;
@@ -23,7 +24,6 @@
 
 	function formatTimestamp(timestamp: number) {
 		formattedAgo = format(timestamp);
-		console.log('blabla');
 	}
 	
 	async function getTasks() {
@@ -65,13 +65,16 @@
 	
 	<!-- Loader -->
 	<div class="loader">
-		<div>
-			<span class="unimportant">{ report + ' ' + command }</span>
+		<div class="refresh-container">
+			{#if newTaskTemplate}				
+				<button on:click={() => new CreateTaskModal(plugin.app, plugin, newTaskTemplate).open()} >{@html getIcon('plus')?.outerHTML }</button>
+			{/if}
+			<span class="unimportant padding-horizontal">{ report + ' ' + command }</span>
 		</div>
 		<div class="refresh-container">
-			{#if state === 'ok' }<span class="report unimportant">updated { formattedAgo }</span>{/if}
-			{#if state === 'error'}<span class="report unimportant error">error fetching tasks</span>{/if}
-			{#if state === 'loading'}<span class="report unimportant">loading...</span> {/if}
+			{#if state === 'ok' }<span class="report unimportant padding-horizontal">updated { formattedAgo }</span>{/if}
+			{#if state === 'error'}<span class="report unimportant error padding-horizontal">error fetching tasks</span>{/if}
+			{#if state === 'loading'}<span class="report unimportant padding-horizontal">loading...</span> {/if}
 			<button class="refresh-button" on:click={getTasks} bind:this={refreshButton}>{@html getIcon('rotate-cw')?.outerHTML }</button>
 		</div>
 	</div>
@@ -93,7 +96,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each reportList.tasks as task}
+						{#each reportList.tasks as task (task.uuid)}
 							<tr>
 								<td> <input type="checkbox" checked={task.status === 'Completed'} on:change={e => isChecked(e) ? plugin.handler?.completeTask(task.uuid) : plugin.handler?.undoTask(task.uuid)} /> </td>
 								{#each task.data as data}
@@ -118,6 +121,11 @@
 		align-items: center;
 
 		background-color: #00000034;
+	}
+
+	.padding-horizontal {
+		padding-left: 1em;
+		padding-right: 1em;
 	}
 
 	.padder {

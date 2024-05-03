@@ -33,17 +33,13 @@ export default class TWPlugin extends Plugin {
 			}
 		});
 
-		// TODO: sync command
-		// TODO: create task command
-
-			// Use Notice
-
 		this.registerMarkdownCodeBlockProcessor('tw', (source, el, ctx) => {
 			
 			// Parse command
 			const input = source.trim().split('\n');
 			const report = input[0]?.trim();
 			const command = input[1]?.trim();
+			const newTaskTemplate = input[2]?.trim();
 
 			new TaskList({
 				target: el,
@@ -51,6 +47,7 @@ export default class TWPlugin extends Plugin {
 					plugin: this,
 					report: report,
 					command: command,
+					newTaskTemplate: newTaskTemplate,
 				}
 			});
 

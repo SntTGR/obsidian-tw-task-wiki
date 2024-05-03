@@ -2,16 +2,18 @@
 	import { Notice, getIcon } from 'obsidian';
     import { onMount } from 'svelte';
     import type TWPlugin from 'src/main';
+	import { TaskEvents } from 'src/task-handler';
 
 	export let plugin: TWPlugin;
     export let titleElement: HTMLElement;
+    export let template: string | undefined;
     export let close: () => void;
 
     let state: 'loading' | 'error' | 'ok' = 'ok';
     
     let input: string;
     let command: string;
-    $: { command = `task add ${input || ''}`; }
+    $: { command = `task add ${input || ''}${template ? ' ' + template : ''}`; }
 
     let createdUuid: string | undefined = undefined;
     
@@ -24,6 +26,7 @@
             (v) => {
                 new Notice(`Task ${v} created.`);
                 createdUuid = v;
+                plugin.emitter!.emit(TaskEvents.REFRESH);
             },
             (err) => {
                 new Notice(`Error creating task: ${err}`);

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Notice, getIcon } from 'obsidian';
     import type TWPlugin from 'src/main';
+	import { TaskEvents } from 'src/task-handler';
     import { onMount } from 'svelte';
 
 	export let plugin: TWPlugin;
@@ -19,14 +20,19 @@
     
     async function modifyTask(cmd: string) {
         state = 'loading';
-        const result = await plugin.handler!.modifyTask(task.uuid, cmd);
-        if (result.isErr()) {
-            state = 'error';
-            console.log(result.error);
-            new Notice(`Could not modify task ${task.uuid}!`, 5000);
-        } else {
-            state = 'ok';
-        }
+        (await plugin.handler!.modifyTask(task.uuid, cmd)).match(
+            (v) => {
+                state = 'ok';
+                new Notice(`Task ${task.uuid} modified.`);
+                plugin.emitter!.emit(TaskEvents.REFRESH);
+            },
+            (err) => {
+                state = 'error';
+                console.log(err);
+                new Notice(`Could not modify task ${task.uuid}!`, 5000);
+            }
+        );
+        
         close();
     }
 
