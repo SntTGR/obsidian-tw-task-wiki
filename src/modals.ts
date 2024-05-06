@@ -46,7 +46,6 @@ type UpdateTask = { uuid: string, name?: string }
 export class UpdateTaskModal extends TWPModal {
 	private ctModal: TaskCreate | undefined;
     
-    
     private task: UpdateTask
 
     constructor(app: App, plugin: TWPlugin, task: UpdateTask) {

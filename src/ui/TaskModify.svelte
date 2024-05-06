@@ -2,6 +2,7 @@
 	import { Notice, getIcon } from 'obsidian';
     import type TWPlugin from 'src/main';
 	import { TaskEvents } from 'src/task-handler';
+	import { sanitize } from 'src/util';
     import { onMount } from 'svelte';
 
 	export let plugin: TWPlugin;
@@ -12,8 +13,10 @@
     let state: 'loading' | 'error' | 'ok' = 'ok';
 
     let input: string;
+    let sanitizedInput: string;
+    $: { sanitizedInput = sanitize(input || '') }
     let command: string;
-    $: { command = `task ${task.uuid} modify ${input || ''}`; }
+    $: { command = `task ${task.uuid} modify ${sanitizedInput}`; }
 
     let readyToModify: boolean;
     $: { readyToModify = state !== 'loading' && input !== undefined && input !== ''}
@@ -54,12 +57,12 @@
 
 <div>
     <label for="modify-command">Name and modifiers</label>
-    <input use:autoFocus tabindex="0" on:keyup={(e) => e.key === 'Enter' && readyToModify && modifyTask(input)} id="modify-command" type="text" bind:value={input} placeholder="{ task.taskName ? task.taskName : 'My Task' } due:tomorrow" />
+    <input use:autoFocus tabindex="0" on:keyup={(e) => e.key === 'Enter' && readyToModify && modifyTask(sanitizedInput)} id="modify-command" type="text" bind:value={input} placeholder="{ task.taskName ? task.taskName : 'My Task' } due:tomorrow" />
     <p class="command" id="command-to-run">{command}</p>
 
     <div class="actions-container">
         <button class="uuid-text" on:click={() => copyToClipboard(task.uuid)}> UUID: {task.uuid} <pre> </pre> {@html getIcon('copy')?.outerHTML} </button>
-        <button class="action-button" disabled={!readyToModify} on:click={() => modifyTask(input)}>Modify</button>
+        <button class="action-button" disabled={!readyToModify} on:click={() => modifyTask(sanitizedInput)}>Modify</button>
     </div>
 </div>
 

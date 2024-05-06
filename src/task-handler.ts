@@ -3,7 +3,6 @@ import type TWPlugin from './main';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as nt from 'neverthrow';
-import { Notice } from 'obsidian';
 
 const asyncExec = promisify(exec);
 
@@ -13,7 +12,7 @@ export type Task = {
     data: Array<string>
 };
 
-type TaskStatus = 'Pending' | 'Completed' | 'Deleted' // Recurring?
+type TaskStatus = 'P' | 'C' | 'D' | 'R'
 
 export type Column = {
     type: string
@@ -23,7 +22,7 @@ export type Column = {
 export type Report = {
     columns: Array<Column>, 
     tasks: Array<Task>,
-    printedColumns: Array<string>,
+    printedColumns: Array<Column>,
 }
 
 export enum TaskEvents {
@@ -33,26 +32,15 @@ export enum TaskEvents {
 
 export default class TaskHandler {
     constructor(private readonly plugin: TWPlugin) {}
-
-    // Global memoization of reports
-    private reports: Map<string, { report: Report, timestamp: number }> = new Map();
     
-    async getTasks(report: string, command?: string) {
-        // const memoizedReport = this.reports.get(report);
-        // if (memoizedReport !== undefined) { 
-        //     return memoizedReport.report;
-        // }
+    async getTasks(clean_report: string, clean_command?: string) {
 
         const timestamp: number = Date.now();
-        const result = await this.fetchReportTasks(report, command);
+        const result = await this.fetchReportTasks(clean_report, clean_command);
         if (result.isErr()) {
-            console.error(result.error);
+            this.plugin.logger!.error_log(result.error);
             throw nt.err(result.error);
         }
-
-        // const prevReport = this.reports.get(report);
-        // if (prevReport !== undefined && prevReport.timestamp > timestamp) return prevReport;
-        // this.reports.set(report, { report: result.value, timestamp })
 
         return { report: result.value, timestamp };
     }
@@ -76,7 +64,6 @@ export default class TaskHandler {
     }
     
     async deleteTask(uuid: string) {
-        // NOTE: might need to overload the confirmation
         const result = await this.setTaskStatus(uuid, 'deleted');
         if (result.isErr()) return result;
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
@@ -93,10 +80,6 @@ export default class TaskHandler {
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
     }
 
-    invalidateCache = () => {
-        this.reports.clear();
-    }
-
     private getUuidOfTask (id: string) {
         return this.execTW(['_get', `${id}.uuid`]).map( v => v.trim() );
     }
@@ -106,23 +89,19 @@ export default class TaskHandler {
         return lines.map( l => /task (?<id>[0-9]+)/.exec(lines[0])?.groups?.id ).filter( v => v !== undefined && v !== null ) as string[];
     }
 
-    private execTW = (args: string[] | string): nt.ResultAsync<string, Error> => {
-        // TODO: better exec handling
-        
-        let command = this.plugin.settings.path;
+    private execTW = (args: string[] | string): nt.ResultAsync<string, Error> => {        
+        let command = this.plugin.settings.tw_bin;
         if (Array.isArray(args)) command += ' ' + args.map( s => `"${s}"`).join(' ');
         else command += ' ' + args;
         
-        console.log('Executing: \n', command);
-        return nt.ResultAsync.fromPromise(asyncExec(command).then( v => v.stdout ).then(r => { console.log('Result: \n', r); return r }), (e) => e instanceof Error ? e : new Error(String(e)));
+        this.plugin.logger!.debug_log('Executing: \n', command);
+        return nt.ResultAsync.fromPromise(asyncExec(command).then( v => v.stdout ).then(r => { this.plugin.logger!.debug_log('Result: \n', r); return r }), (e) => e instanceof Error ? e : new Error(String(e)));
     }
 
-    private fetchReportColumns = async (report: string): Promise<nt.Result<Array<Column>, Error>> => {
+    private fetchReportColumns = async (clean_report: string): Promise<nt.Result<Array<Column>, Error>> => {
     
-        const rep = report;
-    
-        const label_commands = ['_get', `rc.report.${rep}.labels`];
-        const column_commands = ['_get', `rc.report.${rep}.columns`];
+        const label_commands = ['_get', `rc.report.${clean_report}.labels`];
+        const column_commands = ['_get', `rc.report.${clean_report}.columns`];
     
         const [labels, columns] = await Promise.all(
             [
@@ -139,19 +118,19 @@ export default class TaskHandler {
     
         return nt.ok(cols);
     }
-    
-        // TODO: memoize reports from a function here. Expose that function to the taskHandler
-    
-    private fetchReportTasks = async (report: string, command?: string): Promise<nt.Result<Report, Error>> => {
         
-        const colRes = await this.fetchReportColumns(report);
+    private fetchReportTasks = async (clean_report: string, clean_command?: string): Promise<nt.Result<Report, Error>> => {
+        
+        const cleanReportNoQuotes = clean_report.slice(1, clean_report.length - 1);
+
+        const colRes = await this.fetchReportColumns(cleanReportNoQuotes);
         if (colRes.isErr()) { return nt.err(colRes.error); }
         const col = colRes.value;
         if (col.length === 0) return nt.ok({ columns: [], tasks: [], printedColumns: [] });
     
         // Call tasks overriding first two columns
-        const colOverride = `rc.report.${report}.columns:${ ['uuid.long','status.long',...col.map( c => c.type )].join(',') }`
-        const labOverride = `rc.report.${report}.labels:${ ['_tw_uuid', '_tw_status',...col.map( c => c.label )].join(',') }`
+        const colOverride = `rc.report.${cleanReportNoQuotes}.columns:${ ['uuid.long','status.short',...col.map( c => c.type )].join(',') }`
+        const labOverride = `rc.report.${cleanReportNoQuotes}.labels:${ ['_tw_uuid', '_tw_status',...col.map( c => c.label )].join(',') }`
     
         const verbosityOverride = `rc.verbose:label`;
         const colorOverride = `rc.color:0` // ?
@@ -163,15 +142,9 @@ export default class TaskHandler {
         const columnPaddingOverride = `rc.column.padding:1`
     
         const hyphenateOverride = `rc.hyphenate:0`
-    
         // const emptyColumnsOverride = `rc.print.empty.columns:0`
     
-        // Separate using the label's line separator
-    
-        console.log('command', command);
-        const fullcommand : string = `${report} ${command ? command + ' ' : ''}` + [colOverride, labOverride, verbosityOverride, colorOverride, widthOverride, heightOverride, rowPaddingOverride, columnPaddingOverride, hyphenateOverride].map(s => `"${s}"`).join(' ');
-
-        console.log(fullcommand);
+        const fullcommand : string = `${clean_report} ${clean_command ? clean_command + ' ' : ''}` + [colOverride, labOverride, verbosityOverride, colorOverride, widthOverride, heightOverride, rowPaddingOverride, columnPaddingOverride, hyphenateOverride].map(s => `"${s}"`).join(' ');
 
         const twRes = await this.execTW(fullcommand);
         if (twRes.isErr()) { 
@@ -192,9 +165,14 @@ export default class TaskHandler {
         // uuid2     dat2   description  true
         
         const [labels, headerLine, ...taskLines] = tw.split('\n');
-        const ocurrences = linearSearchOcurrence(' ', headerLine) // ranges [9,15,20]
+        const ocurrences = linearSearchOcurrence(' ', headerLine) // ranges [9,15,20]7
         
         const separatedLabels = sliceUsingSeparatorIndexes(labels, ocurrences).slice(2).map(l => l.trim());
+        const printedColumns = separatedLabels.map( l => ({
+            label: l,
+            type: col.find( c => c.label === l )!.type
+        })); // TODO: opt
+        
         const taskList: Task[] = [];
         
         for (let i = 0; i < taskLines.length; i++) {
@@ -226,7 +204,7 @@ export default class TaskHandler {
         return nt.ok({
             tasks: taskList,
             columns: col,
-            printedColumns: separatedLabels
+            printedColumns: printedColumns
         });
     }
     

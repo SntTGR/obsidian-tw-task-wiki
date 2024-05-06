@@ -1,57 +1,75 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { Report, TaskEvents } from '../task-handler';
+	import { Report, Task, TaskEvents } from '../task-handler';
 	import { getIcon } from 'obsidian'
 	import { CreateTaskModal, UpdateTaskModal } from '../modals';
+
+	import Status from './col/status.svelte';
 	
 	import { format } from 'timeago.js';
 	import type TWPlugin from 'src/main';
+	import Tags from './col/tags.svelte';
+	import Urgency from './col/urgency.svelte';
 
 	export let plugin: TWPlugin;
+	
 	export let report: string;
+	export let sanitizedReport: string;
+	
 	export let command: string | undefined;
+	export let sanitizedCommand: string | undefined;
+	
 	export let newTaskTemplate: string | undefined;
 
 	let state: 'loading' | 'error' | 'ok' = 'loading';
 	let reportList: Report;
 	let timestamp: number;
-	let timestampEl: HTMLElement;
+	let altDown: boolean = false;
 
 	let refreshButton: HTMLElement;
 	
 	let formattedAgo: string;
 	$: { formatTimestamp(timestamp) }
 
-	function formatTimestamp(timestamp: number) {
-		formattedAgo = format(timestamp);
-	}
+	function formatTimestamp(timestamp: number) { formattedAgo = format(timestamp); }
 	
 	async function getTasks() {
 		state = 'loading';
 		
 		let result;
 		try {
-			result = await plugin.handler?.getTasks(report, command);
+			result = await plugin.handler?.getTasks(sanitizedReport, sanitizedCommand);
 		} catch (error) {
 			state = 'error';
 			console.error('Error fetching tasks', error);
 			return;
 		}
-
+		
 		reportList = result!.report;
+		console.log(reportList);
 		timestamp = result!.timestamp;
 		state = 'ok';	
 	}
 
-	function isChecked(e: Event): boolean {
-		return (e.target as any).checked
+	function isChecked(e: Event): boolean { return (e.target as any).checked }
+
+	function onAltDown() { altDown = true; }
+	function onAltUp() { altDown = false; }
+
+	async function handleStatusChange(uuid: string, e: Event & { detail: Task['status'] }) {
+		switch (e.detail) {
+			case 'C': await plugin.handler?.completeTask(uuid); break;
+			case 'D': await plugin.handler?.deleteTask(uuid); break;
+			case 'P': await plugin.handler?.modifyTask(uuid, 'status:pending'); break;
+			case 'R': await plugin.handler?.modifyTask(uuid, 'status:recurring'); break;
+			default: break;
+		}
 	}
 
 	onMount(() => {
 		getTasks();
 		plugin.emitter?.on(TaskEvents.REFRESH, () => {
 			// Set to loading and start a new promise to refresh the internal data
-			plugin.handler?.invalidateCache();
 			getTasks();
 		});
 		plugin.emitter?.on(TaskEvents.INTERVAL, () => {
@@ -61,8 +79,10 @@
 
 </script>
 
+<svelte:window on:keydown={e => e.key === 'Alt' && onAltDown()} on:keyup={e => e.key === 'Alt' && onAltUp()}/>
+
 <div>
-	
+
 	<!-- Loader -->
 	<div class="loader">
 		<div class="refresh-container">
@@ -91,16 +111,22 @@
 						<tr>
 							<th></th>
 							{#each reportList.printedColumns as pColumns}
-								<th>{pColumns}</th>
+								<th>{pColumns.label}</th>
 							{/each}
 						</tr>
 					</thead>
 					<tbody>
-						{#each reportList.tasks as task (task.uuid)}
-							<tr>
-								<td> <input type="checkbox" checked={task.status === 'Completed'} on:change={e => isChecked(e) ? plugin.handler?.completeTask(task.uuid) : plugin.handler?.undoTask(task.uuid)} /> </td>
-								{#each task.data as data}
-									<td on:click={ () => { new UpdateTaskModal(plugin.app, plugin, { uuid: task.uuid }).open() } }>{data}</td>
+						{#each reportList.tasks as task, tIndex (task.uuid)}
+							<tr class="task-hover">
+								<Status status={task.status} altVersion={altDown} on:statusChange={(e) => handleStatusChange(task.uuid, e)}/>
+								{#each task.data as data, dIndex}
+									{#if reportList.printedColumns[dIndex].type === 'tags'}
+										<Tags tags={data}/>
+									{:else if reportList.printedColumns[dIndex].type === 'urgency'}
+										<Urgency urgency={data}/>
+									{:else}
+										<td on:click={ () => { new UpdateTaskModal(plugin.app, plugin, { uuid: task.uuid }).open() } }>{data}</td>
+									{/if}
 								{/each}
 							</tr>
 						{/each}
@@ -123,6 +149,10 @@
 		background-color: #00000034;
 	}
 
+	.task-hover:hover {
+		background-color: var(--table-selection);
+	}
+	
 	.padding-horizontal {
 		padding-left: 1em;
 		padding-right: 1em;
@@ -166,11 +196,6 @@
 	.tw-table th, .tw-table td {
 		min-width: 1ch !important;
 		font-size: var(--font-smaller);
-	}
-
-
-	.tw-table input {
-		margin: 0;
 	}
 
 	.refresh-button {

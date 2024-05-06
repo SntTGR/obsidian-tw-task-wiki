@@ -3,6 +3,7 @@
     import { onMount } from 'svelte';
     import type TWPlugin from 'src/main';
 	import { TaskEvents } from 'src/task-handler';
+	import { sanitize } from 'src/util';
 
 	export let plugin: TWPlugin;
     export let titleElement: HTMLElement;
@@ -13,7 +14,9 @@
     
     let input: string;
     let command: string;
-    $: { command = `task add ${input || ''}${template ? ' ' + template : ''}`; }
+    $: { command = `task add ${trueInput}`; }
+    let trueInput: string;
+    $: { trueInput = `${sanitize(input || '')}${template ? ' ' + sanitize(template) : ''}`}
 
     let createdUuid: string | undefined = undefined;
     
@@ -57,13 +60,13 @@
 
 <div role="textbox">
     <label for="create-command">Name and modifiers</label>
-    <input use:autoFocus tabindex="0" id="create-command" on:keyup={(e) => e.key === 'Enter' && readyToCreate && createTask(input)} type="text" bind:value={input} placeholder="My new task priority:L" />
+    <input use:autoFocus tabindex="0" id="create-command" on:keyup={(e) => e.key === 'Enter' && readyToCreate && createTask(trueInput)} type="text" bind:value={input} placeholder="My new task priority:L" />
     <p class="command" id="command-to-run">{command}</p>
 
     <!-- Hidden if no UUID created -->
     <div class="actions-container">
         <button class="uuid-text" class:hidden={!createdUuid} on:click={() => copyToClipboard(createdUuid || '')}> UUID: {createdUuid} <pre> </pre> {@html getIcon('copy')?.outerHTML} </button>
-        <button class="action-button" disabled={!readyToCreate} on:click={() => createTask(input)}>Create</button>
+        <button class="action-button" disabled={!readyToCreate} on:click={() => createTask(trueInput)}>Create</button>
     </div>
 
 </div>
