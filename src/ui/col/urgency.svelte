@@ -16,11 +16,9 @@
     onMount(() => {
         urgencyValue = parseFloat(urgency) / 10.0;
         urgencyColor = threeColorHslLerp(cColorHSL, bColorHSL, aColorHSL, urgencyValue)
-        console.log(urgencyColor);
     });
 
     function colorHSLToString(color: ColorHSL, alpha: number = 1.0) {
-        console.log(`hsla(${color[0]}, ${color[1]}%, ${color[2]}%, ${alpha})`);
         return `hsla(${color[0]}, ${color[1]}%, ${color[2]}%, ${alpha})`;
     }
     

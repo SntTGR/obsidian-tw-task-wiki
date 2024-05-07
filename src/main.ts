@@ -36,6 +36,14 @@ export default class TWPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: 'tw-undo',
+			name: 'Task Undo',
+			callback: () => {
+				this.handler?.undo();
+			}
+		})
+
 		this.registerMarkdownCodeBlockProcessor('tw', (source, el, ctx) => {
 			
 			// Parse command

@@ -142,8 +142,6 @@ export function userArguments(input: string): string[] {
         args.push(current);
     }
 
-    console.log(args);
-
     return args;
 }
 

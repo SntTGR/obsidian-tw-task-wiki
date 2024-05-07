@@ -31,7 +31,6 @@
             },
             (err) => {
                 state = 'error';
-                console.log(err);
                 new Notice(`Could not modify task ${task.uuid}!`, 5000);
             }
         );
@@ -44,7 +43,6 @@
     });
 
     function autoFocus(node: HTMLElement) {
-        console.log('trying to focus', node);
         node.focus();
     }
 

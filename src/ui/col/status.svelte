@@ -3,8 +3,8 @@
 	import type { Task } from "src/task-handler";
 	import { createEventDispatcher } from "svelte";
 
-    let disabled: boolean = false;
     export let status : Task['status'];
+    export let disabled : true | undefined = undefined;
 
     export let altVersion = false;
     
@@ -14,7 +14,6 @@
     function notifyChange(newStatus: Task['status']) {
         dispatch('statusChange', newStatus);
         status = newStatus;
-        disabled = true;
     }
 
 </script>
@@ -24,17 +23,17 @@
 
 {#if !altVersion}
     {#if status === 'D'}
-        <td class="center-td"> <button class="small-delete-button" on:click={() => notifyChange('P')}>{@html getIcon('undo')?.outerHTML }</button> </td>
+        <td class="center-td"> <button disabled={disabled} class="small-delete-button" on:click={() => notifyChange('P')}>{@html getIcon('undo')?.outerHTML }</button> </td>
     {:else if status === 'R'}
         <td class="center-td"> </td>
     {:else}
-        <td class="center-td"> <input class="small-checkbox" type="checkbox" checked={status === 'C'} on:change={e => isChecked(e) ? notifyChange('C') : notifyChange('P')}/> </td>
+        <td class="center-td"> <input disabled={disabled} class="small-checkbox" type="checkbox" checked={status === 'C'} on:change={e => isChecked(e) ? notifyChange('C') : notifyChange('P')}/> </td>
     {/if}
 {:else}
     {#if status === 'D'}
-        <td class="center-td"> <button class="small-delete-button" on:click={() => notifyChange('P')}>{@html getIcon('undo')?.outerHTML }</button> </td>
+        <td class="center-td"> <button disabled={disabled} class="small-delete-button" on:click={() => notifyChange('P')}>{@html getIcon('undo')?.outerHTML }</button> </td>
     {:else}
-        <td class="center-td"> <button class="small-delete-button" on:click={() => notifyChange('D')}>{@html getIcon('cross')?.outerHTML }</button> </td>
+        <td class="center-td"> <button disabled={disabled} class="small-delete-button" on:click={() => notifyChange('D')}>{@html getIcon('cross')?.outerHTML }</button> </td>
     {/if}
 {/if}
 

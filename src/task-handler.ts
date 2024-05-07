@@ -3,6 +3,7 @@ import type TWPlugin from './main';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as nt from 'neverthrow';
+import { Notice } from 'obsidian';
 
 const asyncExec = promisify(exec);
 
@@ -87,6 +88,13 @@ export default class TaskHandler {
     private parseCreationModificationOutput (output: string): string[] {
         const lines = output.trim().split(/\n\r?/);
         return lines.map( l => /task (?<id>[0-9]+)/.exec(lines[0])?.groups?.id ).filter( v => v !== undefined && v !== null ) as string[];
+    }
+
+    async undo() {
+        const result = await this.execTW(['rc.confirmation:0','undo']);
+        if (result.isErr()) return new Notice('Error trying to undo last action');
+        this.plugin.emitter!.emit(TaskEvents.REFRESH);        
+        new Notice('Last action undone');
     }
 
     private execTW = (args: string[] | string): nt.ResultAsync<string, Error> => {        

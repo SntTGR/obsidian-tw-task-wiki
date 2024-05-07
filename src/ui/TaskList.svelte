@@ -22,7 +22,7 @@
 	export let newTaskTemplate: string | undefined;
 
 	let state: 'loading' | 'error' | 'ok' = 'loading';
-	let reportList: Report;
+	let reportList: Omit<Report, 'tasks'> & { tasks: Array<Report['tasks'][number] & {disabled?: true}> };
 	let timestamp: number;
 	let altDown: boolean = false;
 
@@ -41,12 +41,11 @@
 			result = await plugin.handler?.getTasks(sanitizedReport, sanitizedCommand);
 		} catch (error) {
 			state = 'error';
-			console.error('Error fetching tasks', error);
+			plugin.logger!.debug_log('Error fetching tasks', error);
 			return;
 		}
 		
 		reportList = result!.report;
-		console.log(reportList);
 		timestamp = result!.timestamp;
 		state = 'ok';	
 	}
@@ -117,8 +116,8 @@
 					</thead>
 					<tbody>
 						{#each reportList.tasks as task, tIndex (task.uuid)}
-							<tr class="task-hover">
-								<Status status={task.status} altVersion={altDown} on:statusChange={(e) => handleStatusChange(task.uuid, e)}/>
+							<tr class:row-disabled={task.disabled} class="task-hover">
+								<Status disabled={task.disabled} status={task.status} altVersion={altDown} on:statusChange={(e) => {handleStatusChange(task.uuid, e); task.disabled = true}}/>
 								{#each task.data as data, dIndex}
 									{#if reportList.printedColumns[dIndex].type === 'tags'}
 										<Tags tags={data}/>
@@ -164,6 +163,11 @@
 
 	.error {
 		color: lightcoral;
+	}
+
+	.row-disabled {
+		text-decoration: line-through;
+		color: var(--color-base-50);
 	}
 
 	.unimportant {

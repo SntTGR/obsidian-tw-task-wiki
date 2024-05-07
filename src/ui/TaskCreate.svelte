@@ -43,7 +43,6 @@
     });
 
     function autoFocus(node: HTMLElement) {
-        console.log('trying to focus', node);
         node.focus();
     }
 
