@@ -1,18 +1,35 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, MarkdownRenderChild, Notice } from 'obsidian';
 import TaskList from './ui/TaskList.svelte';
 import { CreateTaskModal } from './modals';
 import { TinyEmitter } from 'tiny-emitter';
 import TaskHandler, { TaskEvents } from './task-handler';
 import { TWPluginLogger, sanitize, sanitizeSingleArgument } from './util';
+import { SvelteComponent } from 'svelte';
 
 interface TWSettings {
 	tw_bin: string;
 	debug_log: boolean;
+	cache_columns: boolean;
 }
 
 const DEFAULT_SETTINGS: TWSettings = {
 	tw_bin: 'task',
 	debug_log: false,
+	cache_columns: true,
+}
+
+class LifeCycleHookMRC extends MarkdownRenderChild {
+	
+	component: SvelteComponent
+	
+	constructor(el: HTMLElement, component: SvelteComponent) {
+		super(el);
+		this.component = component;
+	}
+
+	onunload(): void {
+		this.component.$destroy();
+	}
 }
 
 export default class TWPlugin extends Plugin {
@@ -54,7 +71,7 @@ export default class TWPlugin extends Plugin {
 
 			const newTaskTemplate = input[2]?.trim();
 
-			new TaskList({
+			const svelteComponent = new TaskList({
 				target: el,
 				props: {
 					plugin: this,
@@ -64,10 +81,13 @@ export default class TWPlugin extends Plugin {
 					
 					command: command,
 					sanitizedCommand: command ? sanitize(command) : '',
-
+					
 					newTaskTemplate: newTaskTemplate
 				}
 			});
+			
+			const component = new LifeCycleHookMRC(el, svelteComponent);
+			ctx.addChild(component);
 
 		})
 
@@ -123,5 +143,25 @@ class TWSettingTab extends PluginSettingTab {
 					this.plugin.settings.debug_log = value;
 					await this.plugin.saveSettings();
 				}));
+
+		new Setting(containerEl)
+			.setName('Columns cache')
+			.setDesc('Cache report columns/labels for faster reloading. Disable if you fiddle with the taskwarrior report columns too much :).')
+			.addButton(button => {
+				button
+					.setButtonText('Clear cache')
+					.onClick(async () => {
+						const cleared = this.plugin.handler?.clearColumnCache();
+						if (cleared !== undefined) new Notice(`Cleared ${cleared} cached reports`);
+					})
+			})
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.cache_columns)
+				.onChange(async (value) => {
+					this.plugin.settings.cache_columns = value;
+					await this.plugin.saveSettings();
+				}))
+			
+	
 	}
 }

@@ -65,15 +65,18 @@
 		}
 	}
 
+	const refreshCallback = () => { getTasks(); }
+	const intervalCallback = () => { formatTimestamp(timestamp); }
+
 	onMount(() => {
 		getTasks();
-		plugin.emitter?.on(TaskEvents.REFRESH, () => {
-			// Set to loading and start a new promise to refresh the internal data
-			getTasks();
-		});
-		plugin.emitter?.on(TaskEvents.INTERVAL, () => {
-			formatTimestamp(timestamp);
-		})
+		plugin.emitter?.on(TaskEvents.REFRESH, refreshCallback);
+		plugin.emitter?.on(TaskEvents.INTERVAL, intervalCallback);
+	})
+
+	onDestroy(() => {
+		plugin.emitter?.off(TaskEvents.REFRESH, refreshCallback);
+		plugin.emitter?.off(TaskEvents.INTERVAL, intervalCallback);
 	})
 
 </script>

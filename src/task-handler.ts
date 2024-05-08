@@ -32,8 +32,17 @@ export enum TaskEvents {
 }
 
 export default class TaskHandler {
+    
+    reportColumnCache: Map<string, Array<Column>> = new Map();
+    
     constructor(private readonly plugin: TWPlugin) {}
     
+    clearColumnCache(): number {
+        const cleared = this.reportColumnCache.size;
+        this.reportColumnCache.clear();
+        return cleared;
+    }
+
     async getTasks(clean_report: string, clean_command?: string) {
 
         const timestamp: number = Date.now();
@@ -108,6 +117,10 @@ export default class TaskHandler {
 
     private fetchReportColumns = async (clean_report: string): Promise<nt.Result<Array<Column>, Error>> => {
     
+        if (this.plugin.settings.cache_columns && this.reportColumnCache.has(clean_report)) {
+            return nt.ok(this.reportColumnCache.get(clean_report)!);
+        }
+
         const label_commands = ['_get', `rc.report.${clean_report}.labels`];
         const column_commands = ['_get', `rc.report.${clean_report}.columns`];
     
@@ -123,7 +136,11 @@ export default class TaskHandler {
         }
     
         const cols = columns.value.filter(p => p.trim() !== '').map( (col, i) => ({ label: labels.value[i], type: col }) )
-    
+        
+        if (this.plugin.settings.cache_columns) {
+            this.reportColumnCache.set(clean_report, cols);
+        }
+
         return nt.ok(cols);
     }
         
