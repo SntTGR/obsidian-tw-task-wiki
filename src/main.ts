@@ -46,16 +46,16 @@ export default class TWPlugin extends Plugin {
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
-			id: 'tw-create-new-task',
-			name: 'Task Add',
+			id: 'create-new-task',
+			name: 'Create task',
 			callback: () => {
 				new CreateTaskModal(this.app, this).open();
 			}
 		});
 
 		this.addCommand({
-			id: 'tw-undo',
-			name: 'Task Undo',
+			id: 'undo',
+			name: 'Undo last task action',
 			callback: () => {
 				this.handler?.undo();
 			}

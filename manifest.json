@@ -1,9 +1,9 @@
 {
-	"id": "tw-obsidian",
-	"name": "TaskWarrior Obsidian",
+	"id": "tw-task-wiki",
+	"name": "TaskWarrior Task Wiki",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Wrapper and integration around TaskWarrior for obsidian",
+	"description": "Wrapper and integration around TaskWarrior for obsidian. Allows you to view and edit tasks in your TaskWarrior database as tables.",
 	"author": "SntTGR",
 	"authorUrl": "https://sntt.gr",
 	"fundingUrl": "https://sntt.gr/donate",
