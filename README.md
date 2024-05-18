@@ -1,4 +1,4 @@
-# Obsidian TaskWarrior plugin
+# Taskwarrior obsidian task wiki
 
 Small and simple markdown syntax for querying taskwarrior reports
 
@@ -8,13 +8,13 @@ Inspired by [taskwiki](https://github.com/tools-life/taskwiki) and [tq-obsidian]
 
 ## Usage
 
-Use the `tw` language
+Use the `tw` codeblock language
 
 ````markdown
 ```tw
-report
-filters
-template
+<report>
+[<filters>]
+[<template>]
 ```
 ````
 
