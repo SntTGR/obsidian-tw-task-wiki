@@ -6,6 +6,9 @@ Small and simple markdown syntax for querying taskwarrior reports
 
 Inspired by [taskwiki](https://github.com/tools-life/taskwiki) and [tq-obsidian](https://github.com/tgrosinger/tq-obsidian)
 
+> [!Caution]
+> This pluging runs the configured taskwarrior binary with arbitrary arguments. Make sure you trust your vault notes.
+
 ## Usage
 
 Use the `tw` codeblock language
