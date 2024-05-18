@@ -1,6 +1,6 @@
 {
 	"name": "tw-task-wiki",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Wrapper and integration around TaskWarrior for obsidian",
 	"main": "main.js",
 	"scripts": {
