@@ -5,19 +5,37 @@ import { TinyEmitter } from 'tiny-emitter';
 import TaskHandler, { TaskEvents } from './task-handler';
 import { TWPluginLogger, sanitize, sanitizeSingleArgument } from './util';
 import { SvelteComponent } from 'svelte';
+import { randomUUID } from 'crypto';
+
+class RightClickMenuAction 
+{ 
+	ActionId: string
+	ActionName: string
+	Action: string
+	constructor(name:string, action:string) {
+		this.Action = action;
+		this.ActionName = name;	
+		this.ActionId = randomUUID();
+	}
+}
 
 interface TWSettings {
 	tw_bin: string;
 	debug_log: boolean;
 	cache_columns: boolean;
 	delete_key: string;
+	right_click_context_menu_enabled: boolean;
+	right_click_context_menu_actions: RightClickMenuAction[];
 }
+
 
 const DEFAULT_SETTINGS: TWSettings = {
 	tw_bin: 'task',
 	debug_log: false,
 	cache_columns: true,
 	delete_key: "Alt",
+	right_click_context_menu_enabled: false,
+	right_click_context_menu_actions: [],
 }
 
 class LifeCycleHookMRC extends MarkdownRenderChild {
@@ -175,5 +193,62 @@ class TWSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
+		new Setting(containerEl)
+			.setName('Enable custom actions context menu')
+			.setDesc('Will enable feature of custom actions on context menu on right click.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.right_click_context_menu_enabled)
+				.onChange(async (value) => {
+					this.plugin.settings.right_click_context_menu_enabled = value;
+					await this.plugin.saveSettings();
+					// refresh the  view
+					this.display();
+				}))
+		
+		if(this.plugin.settings.right_click_context_menu_enabled) {
+			// This is just a button to add empty action so we can modify it
+			new Setting(containerEl)
+				.setName(`Add Action: `)
+				.setDesc(``)
+				.addButton(button => {
+					button
+						.setButtonText('+')
+						.onClick(async () => {
+							var emptyAction = new RightClickMenuAction("", "")
+							this.plugin.settings.right_click_context_menu_actions.push(emptyAction)
+							this.display();
+						})
+			});
+
+			// Display already addedd actons
+			for (const [index, action] of this.plugin.settings.right_click_context_menu_actions.entries()) {
+				new Setting(containerEl)
+					.setName(`Action: `)
+					.setDesc(``)
+					.addText(text => text
+						.setPlaceholder('Name')
+						.setValue(action.ActionName)
+						.onChange(async (value) => {
+							this.plugin.settings.right_click_context_menu_actions[index].ActionName = value
+							await this.plugin.saveSettings();
+						}))
+					.addText(text => text
+						.setPlaceholder('Example +today')
+						.setValue(action.Action)
+						.onChange(async (value) => {
+							this.plugin.settings.right_click_context_menu_actions[index].Action = value
+							await this.plugin.saveSettings();
+						}))
+					.addButton(button => {
+						button
+							.setButtonText('-')
+							.onClick(async () => {
+								this.plugin.settings.right_click_context_menu_actions = this.plugin.settings.right_click_context_menu_actions.filter(x => x.ActionId != action.ActionId)
+								await this.plugin.saveSettings();
+								this.display();
+							})
+						});
+			}
+		}
 	}
 }
