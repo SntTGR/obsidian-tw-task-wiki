@@ -24,7 +24,7 @@
 	let state: 'loading' | 'error' | 'ok' = 'loading';
 	let reportList: Omit<Report, 'tasks'> & { tasks: Array<Report['tasks'][number] & {disabled?: true}> };
 	let timestamp: number;
-	let altDown: boolean = false;
+	let deleteKeyDown: boolean = false;
 
 	let refreshButton: HTMLElement;
 	
@@ -52,8 +52,8 @@
 
 	function isChecked(e: Event): boolean { return (e.target as any).checked }
 
-	function onAltDown() { altDown = true; }
-	function onAltUp() { altDown = false; }
+	function onDeleteKeyDown() { deleteKeyDown = true; }
+	function onDeleteKeyUp() { deleteKeyDown = false; }
 
 	async function handleStatusChange(uuid: string, e: Event & { detail: Task['status'] }) {
 		switch (e.detail) {
@@ -81,7 +81,7 @@
 
 </script>
 
-<svelte:window on:keydown={e => e.key === 'Alt' && onAltDown()} on:keyup={e => e.key === 'Alt' && onAltUp()}/>
+<svelte:window on:keydown={e => e.key === plugin.settings.delete_key  && onDeleteKeyDown()} on:keyup={e => e.key === plugin.settings.delete_key && onDeleteKeyUp()}/>
 
 <div>
 
@@ -120,7 +120,7 @@
 					<tbody>
 						{#each reportList.tasks as task, tIndex (task.uuid)}
 							<tr class:row-disabled={task.disabled} class="task-hover">
-								<Status disabled={task.disabled} status={task.status} altVersion={altDown} on:statusChange={(e) => {handleStatusChange(task.uuid, e); task.disabled = true}}/>
+								<Status disabled={task.disabled} status={task.status} altVersion={deleteKeyDown} on:statusChange={(e) => {handleStatusChange(task.uuid, e); task.disabled = true}}/>
 								{#each task.data as data, dIndex}
 									{#if reportList.printedColumns[dIndex].type === 'tags'}
 										<Tags tags={data}/>

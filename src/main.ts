@@ -10,12 +10,14 @@ interface TWSettings {
 	tw_bin: string;
 	debug_log: boolean;
 	cache_columns: boolean;
+	delete_key: string;
 }
 
 const DEFAULT_SETTINGS: TWSettings = {
 	tw_bin: 'task',
 	debug_log: false,
 	cache_columns: true,
+	delete_key: "Alt",
 }
 
 class LifeCycleHookMRC extends MarkdownRenderChild {
@@ -161,7 +163,17 @@ class TWSettingTab extends PluginSettingTab {
 					this.plugin.settings.cache_columns = value;
 					await this.plugin.saveSettings();
 				}))
-			
-	
+
+		new Setting(containerEl)
+			.setName('Deletion toggler Key')
+			.setDesc('Key to hold to enable task deletion')
+			.addText(text => text
+				.setPlaceholder('Aalt')
+				.setValue(this.plugin.settings.delete_key)
+				.onChange(async (value) => {
+					this.plugin.settings.delete_key= value;
+					await this.plugin.saveSettings();
+				}));
+
 	}
 }
