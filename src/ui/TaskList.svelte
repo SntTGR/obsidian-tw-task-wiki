@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { Report, Task, TaskEvents } from '../task-handler';
+	import type { Report, Task } from '../task-handler';
+	import { TaskEvents } from '../task-handler';
 	import { getIcon } from 'obsidian'
 	import { CreateTaskModal, UpdateTaskModal } from '../modals';
 	import { showActionMenu }  from './CustomActionMenu';
@@ -120,7 +121,7 @@
 					</thead>
 					<tbody>
 						{#each reportList.tasks as task, tIndex (task.uuid)}
-							<tr class:row-disabled={task.disabled} class="task-hover" on:contextmenu={ (event) => showActionMenu(task.uuid, event, plugin)} >
+							<tr class:row-disabled={task.disabled} class="task-hover" on:contextmenu={plugin.settings.right_click_context_menu_enabled ? (event) => showActionMenu(task.uuid, event, plugin): null}>
 								<Status disabled={task.disabled} status={task.status} altVersion={deleteKeyDown} on:statusChange={(e) => {handleStatusChange(task.uuid, e); task.disabled = true}}/>
 								{#each task.data as data, dIndex}
 									{#if reportList.printedColumns[dIndex].type === 'tags'}
@@ -128,7 +129,7 @@
 									{:else if reportList.printedColumns[dIndex].type === 'urgency'}
 										<Urgency urgency={data}/>
 									{:else}
-										<td on:click={ () => { new UpdateTaskModal(plugin.app, plugin, { uuid: task.uuid }).open() } } >{data}</td>
+										<td on:click={ () => { new UpdateTaskModal(plugin.app, plugin, { uuid: task.uuid }).open() } }>{data}</td>
 									{/if}
 								{/each}
 							</tr>

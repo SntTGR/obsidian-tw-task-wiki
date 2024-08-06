@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { ColorHSL, memoizedHexToHSL, threeColorHslLerp } from "src/util";
+	import type { ColorHSL } from "src/util";
+    import { memoizedHexToHSL, threeColorHslLerp } from "src/util";
 	import { onMount } from "svelte";
     
     export let urgency: string;

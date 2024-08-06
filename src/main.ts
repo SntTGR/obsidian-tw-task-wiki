@@ -183,10 +183,10 @@ class TWSettingTab extends PluginSettingTab {
 				}))
 
 		new Setting(containerEl)
-			.setName('Deletion toggler Key')
-			.setDesc('Key to hold to enable task deletion')
+			.setName('Deletion hold Key')
+			.setDesc('Hold key to enable task deletion')
 			.addText(text => text
-				.setPlaceholder('Aalt')
+				.setPlaceholder('Alt')
 				.setValue(this.plugin.settings.delete_key)
 				.onChange(async (value) => {
 					this.plugin.settings.delete_key= value;
@@ -201,30 +201,27 @@ class TWSettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.right_click_context_menu_enabled = value;
 					await this.plugin.saveSettings();
-					// refresh the  view
 					this.display();
 				}))
 		
 		if(this.plugin.settings.right_click_context_menu_enabled) {
-			// This is just a button to add empty action so we can modify it
 			new Setting(containerEl)
-				.setName(`Add Action: `)
-				.setDesc(``)
+				.setName('Add Action: ')
+				.setDesc('')
 				.addButton(button => {
 					button
 						.setButtonText('+')
 						.onClick(async () => {
-							var emptyAction = new RightClickMenuAction("", "")
-							this.plugin.settings.right_click_context_menu_actions.push(emptyAction)
+							this.plugin.settings.right_click_context_menu_actions.push(new RightClickMenuAction('', ''))
 							this.display();
 						})
 			});
 
-			// Display already addedd actons
+			// Display actions
 			for (const [index, action] of this.plugin.settings.right_click_context_menu_actions.entries()) {
 				new Setting(containerEl)
-					.setName(`Action: `)
-					.setDesc(``)
+					.setName('Action: ')
+					.setDesc('')
 					.addText(text => text
 						.setPlaceholder('Name')
 						.setValue(action.ActionName)

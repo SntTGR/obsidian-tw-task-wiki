@@ -12,16 +12,11 @@ function runCommandOnTask(taskUuid: string, command: string, plugin: TWPlugin) {
 }
 
 export function showActionMenu(taskUuid: string, event: MouseEvent, plugin: TWPlugin) {
-
-	if(!plugin.settings.right_click_context_menu_enabled) {
-		//Ideally the template in the TaskList should'nt add anything to oncontext menu if this feature is disabled
-		//But adding if statement in the TaskList.svelte would made everything much more complicated
-		return
-	}
+	event.preventDefault();
 
 	const menu = new Menu();
 
-	for (const [_, action] of plugin.settings.right_click_context_menu_actions.entries()) {
+	for (const action of plugin.settings.right_click_context_menu_actions.values()) {
 		menu.addItem((item) =>
 			item
 			.setTitle(action.ActionName)
