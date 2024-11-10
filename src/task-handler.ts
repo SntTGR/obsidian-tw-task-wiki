@@ -77,17 +77,20 @@ export default class TaskHandler {
         const result = await this.setTaskStatus(uuid, 'deleted');
         if (result.isErr()) return result;
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
     }
     
     async completeTask(uuid: string) {
         const result = await this.execTW([uuid, 'done']);
         if (result.isErr()) return result;
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
     }
     
     async undoTask(uuid: string) {
         this.setTaskStatus(uuid, 'pending');
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
     }
 
     private getUuidOfTask (id: string) {

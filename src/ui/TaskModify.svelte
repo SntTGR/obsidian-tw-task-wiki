@@ -24,7 +24,7 @@
     async function modifyTask(cmd: string) {
         state = 'loading';
         (await plugin.handler!.modifyTask(task.uuid, cmd)).match(
-            (v) => {
+            (_) => {
                 state = 'ok';
                 new Notice(`Task ${task.uuid} modified.`);
                 plugin.emitter!.emit(TaskEvents.REFRESH);
