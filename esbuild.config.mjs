@@ -3,6 +3,8 @@ import process from "process";
 import builtins from "builtin-modules";
 import esbuildSvelte from "esbuild-svelte";
 import sveltePreprocess from "svelte-preprocess";
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 const banner =
 `/*
@@ -11,6 +13,7 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
+const buildDestination = process.env.BUILD_DESTINATION ? path.resolve(process.env.BUILD_DESTINATION) : null;
 const prod = (process.argv[2] === "production");
 
 const context = await esbuild.context({
@@ -24,6 +27,26 @@ const context = await esbuild.context({
 			compilerOptions: { css: true },
 			preprocess: sveltePreprocess(),
 		}),
+		{
+			name: 'copyToDist',
+			setup(build) {
+				build.onEnd(() => {
+					if (!buildDestination) return;
+
+					const mainJS = path.resolve("main.js");
+					const manifestJSON = path.resolve("manifest.json");
+
+					Promise.all([
+						fs.copyFile(mainJS, path.resolve(buildDestination, "main.js")),
+						fs.copyFile(manifestJSON, path.resolve(buildDestination, "manifest.json")),
+					]).then(() => {
+						console.log(`Copied build ${buildDestination}`);
+					}).catch((error) => {
+						console.error(`Error copying files to ${buildDestination}: ${error}`);
+					})
+				})
+			}
+		}
 	],
 	external: [
 		"obsidian",
