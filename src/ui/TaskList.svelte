@@ -12,6 +12,7 @@
 	import type TWPlugin from 'src/main';
 	import Tags from './col/tags.svelte';
 	import Urgency from './col/urgency.svelte';
+	import Project from './col/projects.svelte';
 
 	export let plugin: TWPlugin;
 	
@@ -128,6 +129,8 @@
 										<Tags tags={data}/>
 									{:else if reportList.printedColumns[dIndex].type === 'urgency'}
 										<Urgency urgency={data}/>
+									{:else if reportList.printedColumns[dIndex].type === 'project'}
+										<Project project={data}/>
 									{:else}
 										<td on:click={ () => { new UpdateTaskModal(plugin.app, plugin, { uuid: task.uuid }).open() } }>{data}</td>
 									{/if}
