@@ -66,6 +66,14 @@ export default class TaskHandler {
             .andThen((v) => this.getUuidOfTask(v));
     }
 
+    async getTags(): Promise<nt.Result<string[], Error>> {
+        return this.execTW(`_tags`).map( v => v.trim().split('\n').map( s => s.trim() ) );
+    }
+
+    async getProjects(): Promise<nt.Result<string[], Error>> {
+        return this.execTW(`_projects`).map( v => v.trim().split('\n').map( s => s.trim() ) );
+    }
+
     async modifyTask(uuid: string, command: string) {
         const result = await this.execTW(`${uuid} modify ${command}`);
         if (result.isErr()) return result;
