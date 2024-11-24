@@ -35,7 +35,10 @@ export default class TaskHandler {
     
     reportColumnCache: Map<string, Array<Column>> = new Map();
     
-    constructor(private readonly plugin: TWPlugin) {}
+    constructor(private readonly plugin: TWPlugin) {
+        this.plugin.emitter!.on(TaskEvents.INTERVAL, () => this.handleEvents(TaskEvents.INTERVAL));
+        this.plugin.emitter!.on(TaskEvents.REFRESH, () => this.handleEvents(TaskEvents.REFRESH));
+    }
     
     clearColumnCache(): number {
         const cleared = this.reportColumnCache.size;
@@ -247,6 +250,50 @@ export default class TaskHandler {
     private setTaskStatus = async (uuid: string, status: 'completed' | 'pending' | 'deleted'): Promise<nt.Result<void, Error>> => {
         return this.execTW([uuid, 'modify', `status:${status}`]).map( (t) => {} );
     }
+
+    private handleEvents = async (event: TaskEvents) => {
+        if (event === TaskEvents.REFRESH) {
+            this.cachedTags = undefined;
+            this.cachedProjects = undefined;
+        }
+    }
+
+
+    // Helper functions
+    cachedTags: string[] | undefined = [];
+    async getTagSuggestions(): Promise<string[]> {        
+        if (this.cachedTags === undefined) {
+            const res = await this.getTags();
+            if (res.isErr()) {
+                new Notice(`Error getting tags: ${res.error}`);
+                return [];
+            }
+            this.cachedTags = res.value;
+        }
+        return this.cachedTags;
+    }
+
+    cachedProjects: string[] | undefined = [];
+    async getProjectSuggestions(): Promise<string[]> {
+        if (this.cachedProjects === undefined) {
+            const res = await this.getProjects();
+            if (res.isErr()) {
+                new Notice(`Error getting projects: ${res.error}`);
+                return [];
+            }
+            this.cachedProjects = res.value;
+        }
+        
+        const res = await this.getProjects();
+        if (res.isErr()) {
+            new Notice(`Error getting projects: ${res.error}`);
+            return [];
+        }
+        
+        return res.value
+    }
+
+
 }
 
 function linearSearchOcurrence (search: string, array: string): number[] {

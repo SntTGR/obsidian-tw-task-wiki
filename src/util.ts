@@ -55,10 +55,11 @@ export function hexToHSL(Hex: string): ColorHSL {
     g = g as any / 255;
     b = b as any / 255;
 
-    let cmin = Math.min(r,g,b),
+    const cmin = Math.min(r,g,b),
         cmax = Math.max(r,g,b),
-        delta = cmax - cmin,
-        h = 0,
+        delta = cmax - cmin;
+
+    let h = 0,
         s = 0,
         l = 0;
 
@@ -110,6 +111,12 @@ export function threeColorHslLerp(a: ColorHSL, b: ColorHSL, c: ColorHSL, t: numb
     }
 }
 
+export function shortUuid(uuid: string): string {
+    return uuid!.split('-', 1)[0];
+}
+
+export type SuggestionPatterns = Array<{ pattern: string, getList: (word: string) => Promise<Array<string>> }>
+
 export function userArguments(input: string): string[] {
     // Split the input by spaces
     // respect quoted strings
@@ -122,7 +129,7 @@ export function userArguments(input: string): string[] {
 
     for (let i = 0; i < input.length; i++) {
         const char = input[i];
-        if (char === ' ' && !quoted && !escaped) {
+        if ((char === ' ' || char === '\n') && !quoted && !escaped) {
             args.push(current);
             current = '';
         } else if (char === '"' && !escaped) {
