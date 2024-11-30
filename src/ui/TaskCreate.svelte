@@ -3,7 +3,7 @@
     import { onMount } from 'svelte';
     import type TWPlugin from 'src/main';
 	import { TaskEvents } from 'src/task-handler';
-	import { sanitize, shortUuid, type SuggestionPatterns } from 'src/util';
+	import { limitString, sanitize, shortUuid, type SuggestionPatterns } from 'src/util';
     import SuggestionTextArea from 'src/ui/components/SuggestionTextArea.svelte';
 
 	export let plugin: TWPlugin;
@@ -23,9 +23,6 @@
     
     let readyToCreate: boolean = false;
     $: { readyToCreate = state !== 'loading' && input !== undefined && input !== '' }
-
-    const limitString = (string: string | undefined) => string?.length! > 30 ? string!.substring(0, 30) + '...' : string;
-    
     function getSanitizedInput(disableTemplate?: boolean): string {
         return `${sanitize(input || '')}${template && !disableTemplate ? ' ' + sanitize(template) : ''}`
     }
@@ -100,10 +97,6 @@
         titleElement.setText('Create New Tasks');
     });
 
-    function autoFocus(node: HTMLElement) {
-        node.focus();
-    }
-
     function closeModal() {
         close();
     }
@@ -170,7 +163,7 @@
     <div style="width:100%; margin-bottom:15px">
         {#each createdUuids as { uuid, description }, i}
             <div style="display: flex; margin-top: 5px; margin-bottom: 5px">
-                <button class="uuid-text" class:task-selected={uuid === lastCreatedUuid} on:click={() => {selectTask(uuid)}}> {@html getIcon(uuid === lastCreatedUuid ? 'square-mouse-pointer': 'square-dashed-mouse-pointer')?.outerHTML} <pre> </pre> { limitString(description) } </button>
+                <button class="uuid-text" class:task-selected={uuid === lastCreatedUuid} on:click={() => {selectTask(uuid)}}> {@html getIcon(uuid === lastCreatedUuid ? 'square-mouse-pointer': 'square-dashed-mouse-pointer')?.outerHTML} <pre> </pre> { limitString(description ?? '') } </button>
                 <button class="uuid-text push-right" on:click={() => {copyToClipboard(uuid)}}> {shortUuid(uuid)} <pre> </pre> {@html getIcon('copy')?.outerHTML} </button>
                 <button class="delete-button" on:click={() => deleteTask(uuid)}>{@html getIcon('trash')?.outerHTML}</button>
             </div>

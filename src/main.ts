@@ -5,6 +5,7 @@ import { TinyEmitter } from 'tiny-emitter';
 import TaskHandler, { TaskEvents } from './task-handler';
 import { TWPluginLogger, sanitize, sanitizeSingleArgument } from './util';
 import { SvelteComponent } from 'svelte';
+import { setGlobalContext } from './util';
 import { randomUUID } from 'crypto';
 
 class RightClickMenuAction 
@@ -19,6 +20,15 @@ class RightClickMenuAction
 	}
 }
 
+class ProjectRegexUrl {	
+	regexString: string;
+	uri: string;
+	constructor(regex: string, uri: string) {
+		this.regexString = regex;
+		this.uri = uri;
+	}
+}
+
 interface TWSettings {
 	tw_bin: string;
 	debug_log: boolean;
@@ -26,6 +36,8 @@ interface TWSettings {
 	delete_key: string;
 	right_click_context_menu_enabled: boolean;
 	right_click_context_menu_actions: RightClickMenuAction[];
+	project_urls_enabled: boolean;
+	project_regex_url_entries: ProjectRegexUrl[];
 }
 
 
@@ -36,6 +48,8 @@ const DEFAULT_SETTINGS: TWSettings = {
 	delete_key: "Alt",
 	right_click_context_menu_enabled: false,
 	right_click_context_menu_actions: [],
+	project_urls_enabled: false,
+	project_regex_url_entries: []
 }
 
 class LifeCycleHookMRC extends MarkdownRenderChild {
@@ -69,7 +83,7 @@ export default class TWPlugin extends Plugin {
 			id: 'create-new-task',
 			name: 'Create task',
 			callback: () => {
-				new CreateTaskModal(this.app, this).open();
+				new CreateTaskModal().open();
 			}
 		});
 
@@ -91,11 +105,11 @@ export default class TWPlugin extends Plugin {
 
 			const newTaskTemplate = input[2]?.trim();
 
+			setGlobalContext(this);
+
 			const svelteComponent = new TaskList({
 				target: el,
 				props: {
-					plugin: this,
-					
 					report: report,
 					sanitizedReport: sanitizeSingleArgument(report),
 					
@@ -206,7 +220,7 @@ class TWSettingTab extends PluginSettingTab {
 		
 		if(this.plugin.settings.right_click_context_menu_enabled) {
 			new Setting(containerEl)
-				.setName('Add Action: ')
+				.setHeading().setName('Right click context menu actions')
 				.setDesc('')
 				.addButton(button => {
 					button
@@ -220,8 +234,6 @@ class TWSettingTab extends PluginSettingTab {
 			// Display actions
 			for (const [index, action] of this.plugin.settings.right_click_context_menu_actions.entries()) {
 				new Setting(containerEl)
-					.setName('Action: ')
-					.setDesc('')
 					.addText(text => text
 						.setPlaceholder('Name')
 						.setValue(action.ActionName)
@@ -247,5 +259,89 @@ class TWSettingTab extends PluginSettingTab {
 						});
 			}
 		}
+
+		// Project glob urls menu
+
+		new Setting(containerEl)
+			.setName('Enable project urls')
+			.setDesc('Will enable external linking for projects in lists.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.project_urls_enabled)
+				.onChange(async (value) => {
+					this.plugin.settings.project_urls_enabled = value;
+					await this.plugin.saveSettings();
+					this.display();
+				}));
+		
+		if(this.plugin.settings.project_urls_enabled) {
+			new Setting(containerEl)
+				.setHeading().setName('Project Regex URIs')
+				.setDesc('Order dictates priority')
+				.addButton(button => {
+					button
+						.setButtonText('+')
+						.onClick(async () => {
+							this.plugin.settings.project_regex_url_entries.push(new ProjectRegexUrl('', ''))
+							this.display();
+						})
+				});
+
+			// Display actions
+			for (const [index, project] of this.plugin.settings.project_regex_url_entries.entries()) {
+				new Setting(containerEl)
+					.addText(text => text
+						.setPlaceholder('myproject.*')
+						.setValue(project.regexString)
+						.onChange(async (value) => {
+							this.plugin.settings.project_regex_url_entries[index].regexString = value
+							await this.plugin.saveSettings();
+						}))
+					.addText(text => text
+						.setPlaceholder('obsidian://myfolder/mysubfolder/myproject')
+						.setValue(project.uri)
+						.onChange(async (value) => {
+							this.plugin.settings.project_regex_url_entries[index].uri = value
+							await this.plugin.saveSettings();
+						}))
+					.addButton(button => {
+						button
+							.setButtonText('↑')
+							.onClick(async () => {
+								if(index > 0) {
+									const temp = this.plugin.settings.project_regex_url_entries[index - 1];
+									this.plugin.settings.project_regex_url_entries[index - 1] = this.plugin.settings.project_regex_url_entries[index];
+									this.plugin.settings.project_regex_url_entries[index] = temp;
+									await this.plugin.saveSettings();
+									this.display();
+								}
+							})
+					})
+					.addButton(button => {
+						button
+							.setButtonText('↓')
+							.onClick(async () => {
+								if(index < this.plugin.settings.project_regex_url_entries.length - 1) {
+									const temp = this.plugin.settings.project_regex_url_entries[index + 1];
+									this.plugin.settings.project_regex_url_entries[index + 1] = this.plugin.settings.project_regex_url_entries[index];
+									this.plugin.settings.project_regex_url_entries[index] = temp;
+									await this.plugin.saveSettings();
+									this.display();
+								}
+							})
+					})
+					.addButton(button => {
+						button
+							.setButtonText('-')
+							.onClick(async () => {
+								this.plugin.settings.project_regex_url_entries = this.plugin.settings.project_regex_url_entries.filter(x => x != project)
+								await this.plugin.saveSettings();
+								this.display();
+							})
+					});
+			}
+		}
+		
+
+
 	}
 }

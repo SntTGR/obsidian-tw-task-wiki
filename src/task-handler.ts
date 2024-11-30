@@ -77,6 +77,13 @@ export default class TaskHandler {
         return this.execTW(`_projects`).map( v => v.trim().split('\n').map( s => s.trim() ) );
     }
 
+    async removeTag(uuid: string, tag: string) {
+        const result = await this.execTW(`${uuid} modify -${tag}`);
+        if (result.isErr()) return result;
+        this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
+    }
+
     async modifyTask(uuid: string, command: string) {
         const result = await this.execTW(`${uuid} modify ${command}`);
         if (result.isErr()) return result;
@@ -314,7 +321,6 @@ function sliceUsingSeparatorIndexes (input: string, indexes: number[]): string[]
     }
     return result;
 }
-
 
 
 

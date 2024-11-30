@@ -5,16 +5,16 @@
 	import { getIcon } from 'obsidian'
 	import { CreateTaskModal, UpdateTaskModal } from '../modals';
 	import { showActionMenu }  from './CustomActionMenu';
+	import { getGlobalContext } from 'src/util';
 
 	import Status from './col/status.svelte';
+	import TaskCell from './TaskCell.svelte';
 	
 	import { format } from 'timeago.js';
 	import type TWPlugin from 'src/main';
 	import Tags from './col/tags.svelte';
 	import Urgency from './col/urgency.svelte';
 	import Project from './col/projects.svelte';
-
-	export let plugin: TWPlugin;
 	
 	export let report: string;
 	export let sanitizedReport: string;
@@ -23,6 +23,8 @@
 	export let sanitizedCommand: string | undefined;
 	
 	export let newTaskTemplate: string | undefined;
+
+	const plugin: TWPlugin = getGlobalContext()
 
 	let state: 'loading' | 'error' | 'ok' = 'loading';
 	let reportList: Omit<Report, 'tasks'> & { tasks: Array<Report['tasks'][number] & {disabled?: true}> };
@@ -53,7 +55,9 @@
 		state = 'ok';	
 	}
 
-	function isChecked(e: Event): boolean { return (e.target as any).checked }
+	function newUpdateModal(task: Task, value?: string) {
+		return new UpdateTaskModal({ uuid: task.uuid }, { value: value })
+	}
 
 	function onDeleteKeyDown() { deleteKeyDown = true; }
 	function onDeleteKeyUp() { deleteKeyDown = false; }
@@ -92,7 +96,7 @@
 	<div class="loader">
 		<div class="refresh-container">
 			{#if newTaskTemplate}				
-				<button on:click={() => new CreateTaskModal(plugin.app, plugin, newTaskTemplate).open()} >{@html getIcon('plus')?.outerHTML }</button>
+				<button on:click={() => new CreateTaskModal(newTaskTemplate).open()} >{@html getIcon('plus')?.outerHTML }</button>
 			{/if}
 			<span class="unimportant padding-horizontal">{ report + ' ' + command }</span>
 		</div>
@@ -125,15 +129,21 @@
 							<tr class:row-disabled={task.disabled} class="task-hover" on:contextmenu={plugin.settings.right_click_context_menu_enabled ? (event) => showActionMenu(task.uuid, event, plugin): null}>
 								<Status disabled={task.disabled} status={task.status} altVersion={deleteKeyDown} on:statusChange={(e) => {handleStatusChange(task.uuid, e); task.disabled = true}}/>
 								{#each task.data as data, dIndex}
-									{#if reportList.printedColumns[dIndex].type === 'tags'}
-										<Tags tags={data}/>
-									{:else if reportList.printedColumns[dIndex].type === 'urgency'}
-										<Urgency urgency={data}/>
-									{:else if reportList.printedColumns[dIndex].type === 'project'}
-										<Project project={data}/>
-									{:else}
-										<td on:click={ () => { new UpdateTaskModal(plugin.app, plugin, { uuid: task.uuid }).open() } }>{data}</td>
-									{/if}
+									<TaskCell handleClick={() => { newUpdateModal(task).open() }}>
+										{#if reportList.printedColumns[dIndex].type.startsWith('tags')}
+											<Tags uuid={task.uuid} tags={data}/>
+										{:else if reportList.printedColumns[dIndex].type.startsWith('description')}
+											<!-- svelte-ignore a11y-click-events-have-key-events -->
+											<!-- svelte-ignore a11y-no-static-element-interactions -->
+											<div class="no-cell-click cell-text" on:click={ () => { newUpdateModal(task, data).open() } }>{data}</div>
+										{:else if reportList.printedColumns[dIndex].type.startsWith('urgency')}
+											<Urgency urgency={data}/>
+										{:else if reportList.printedColumns[dIndex].type.startsWith('project')}
+											<Project project={data}/>
+										{:else}
+											<span class="cell-text">{data}</span>
+										{/if}
+									</TaskCell>
 								{/each}
 							</tr>
 						{/each}
@@ -204,7 +214,7 @@
 		margin: 0;
 		border: 0;
 	}
-	.tw-table th, .tw-table td {
+	.tw-table th, .tw-table .cell-text {
 		min-width: 1ch !important;
 		font-size: var(--font-smaller);
 	}

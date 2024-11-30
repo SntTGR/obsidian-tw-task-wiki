@@ -26,11 +26,11 @@
     
 </script>
 
-<td class="center-td">
+<div class="center-td">
     <div class="pill-container">
         <div style="color:{colorHSLToString(urgencyColor)}; background-color:{colorHSLToString(urgencyColor, 0.1)}" class="pill-class">{urgency}</div>
     </div>
-</td>
+</div>
 
 <style>
 

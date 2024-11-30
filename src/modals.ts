@@ -2,6 +2,7 @@ import { App, Modal } from "obsidian";
 import TaskCreate from "./ui/TaskCreate.svelte";
 import TaskModify from './ui/TaskModify.svelte';
 import TWPlugin from './main';
+import { getGlobalContext } from "./util";
 
 class TWPModal extends Modal {
     plugin: TWPlugin;
@@ -16,8 +17,10 @@ export class CreateTaskModal extends TWPModal {
 	private ctModal: TaskCreate | undefined;
 	private template?: string;
 
-	constructor(app: App, plugin: TWPlugin, template?: string) {
-		super(app, plugin);
+	constructor(template?: string) {
+		const plugin = getGlobalContext();
+		
+		super(plugin.app, plugin);
 		this.template = template;
 	}
 
@@ -44,13 +47,20 @@ export class CreateTaskModal extends TWPModal {
 
 type UpdateTask = { uuid: string, name?: string } 
 export class UpdateTaskModal extends TWPModal {
-	private ctModal: TaskCreate | undefined;
+	private ctModal: TaskModify | undefined;
     
     private task: UpdateTask
+	private inputValue: string;
 
-    constructor(app: App, plugin: TWPlugin, task: UpdateTask) {
-        super(app, plugin);
+    constructor(task: UpdateTask, options?: {
+		title?: string;
+		value?: string;
+	}) {
+        const plugin = getGlobalContext();
+		
+		super(plugin.app, plugin);
         this.task = task;
+		this.inputValue = options?.value || '';
     }
 
 	onOpen() {
@@ -59,9 +69,9 @@ export class UpdateTaskModal extends TWPModal {
 		this.ctModal = new TaskModify({
 			target: contentEl,
 			props: {
-				close: () => this.close(),
 				plugin: this.plugin,
                 task: this.task,
+				inputValue: this.inputValue,
 				titleElement: titleEl
 			}
 		})

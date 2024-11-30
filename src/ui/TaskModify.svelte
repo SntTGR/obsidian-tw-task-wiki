@@ -9,8 +9,8 @@
 	export let plugin: TWPlugin;
     export let task: { uuid: string, taskName?: string }
     export let titleElement: HTMLElement;
+    export let inputValue: string | undefined;
     
-    export let close: () => void;
     let state: 'loading' | 'error' | 'ok' = 'ok';
 
     let input: string;
@@ -22,6 +22,10 @@
     
     function getSanitizedInput(): string {
         return `${sanitize(input || '')}`
+    }
+
+    function clearInput() {
+        input = '';
     }
 
     async function modifyTask(cmd: string) {
@@ -37,12 +41,12 @@
                 new Notice(`Could not modify task ${shortUuid(task.uuid)}!: ${err}`, 5000);
             }
         );
-        
-        close();
+        clearInput();
     }
 
     onMount(() => {
         titleElement.setText(`Modify task ${task.taskName || shortUuid(task.uuid)}`);
+        input = inputValue || '';
     });
 
     async function copyToClipboard(c: string) {        
@@ -94,6 +98,9 @@
     <p class="command" id="command-to-run">{ displayedCommand }</p>
 
     <div class="actions-container">
+        <div style="display: flex;">
+            <button class="action-button-error" disabled={state === 'loading'} on:click={() => {}}> {@html getIcon('trash')?.outerHTML} </button>
+        </div>
         <div style="display: flex; margin-left: auto;">
             <button class="uuid-text action-button" on:click={() => copyToClipboard(task.uuid)}>{shortUuid(task.uuid)}<pre> </pre> {@html getIcon('copy')?.outerHTML} </button>
             <button class="action-button" disabled={!readyToModify} on:click={() => modifyTask(getSanitizedInput())}>Modify</button>
@@ -110,6 +117,12 @@
     .action-button {
         margin-left: 5px;
         margin-right: 5px;
+    }
+
+    .action-button-error {
+        margin-left: 5px;
+        margin-right: 5px;
+        color: var(--text-error);
     }
 
     .command {

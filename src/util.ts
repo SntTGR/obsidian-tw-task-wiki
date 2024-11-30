@@ -1,3 +1,6 @@
+import type { App } from "obsidian";
+import type TWPlugin from "./main";
+
 export class TWPluginLogger {
     
     constructor(debugMode = false) {
@@ -36,6 +39,10 @@ export function sanitizeArguments(userArguments: string[]): string {
 }
 
 export type ColorHSL = [number, number, number];
+
+export function limitString(string: string): string {
+    return string.length! > 30 ? string!.substring(0, 30) + '...' : string;
+}
 
 export function hexToHSL(Hex: string): ColorHSL {
         
@@ -152,3 +159,36 @@ export function userArguments(input: string): string[] {
     return args;
 }
 
+
+const regexCache = new Map<string, RegExp>();
+
+function getRegex(pattern: string): RegExp {
+    const cached = regexCache.get(pattern);
+    if (cached !== undefined) return cached;
+    
+    const regex = new RegExp(pattern);
+    regexCache.set(pattern, regex);
+    return regex;
+}
+
+export function matchProjectRegex(project: string): string | undefined {
+    const plugin = getGlobalContext();
+    if (!plugin.settings.project_urls_enabled) return undefined;
+    return plugin.settings.project_regex_url_entries.find((entry) => getRegex(entry.regexString).exec(project) !== null )?.uri;
+}
+
+let context: {
+    plugin: TWPlugin
+    app: App
+} | undefined = undefined
+
+export function setGlobalContext(plugin: TWPlugin) {
+    context = {
+        plugin: plugin,
+        app: plugin.app
+    }
+}
+
+export function getGlobalContext(): TWPlugin {
+    return context!.plugin;
+}
