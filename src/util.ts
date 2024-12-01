@@ -160,21 +160,15 @@ export function userArguments(input: string): string[] {
 }
 
 
-const regexCache = new Map<string, RegExp>();
-
-function getRegex(pattern: string): RegExp {
-    const cached = regexCache.get(pattern);
-    if (cached !== undefined) return cached;
-    
-    const regex = new RegExp(pattern);
-    regexCache.set(pattern, regex);
-    return regex;
-}
-
+export function clearUriCache() { uriCache.clear(); }
+const uriCache = new Map<string, string>();
 export function matchProjectRegex(project: string): string | undefined {
+    if (uriCache.has(project)) return uriCache.get(project);
     const plugin = getGlobalContext();
     if (!plugin.settings.project_urls_enabled) return undefined;
-    return plugin.settings.project_regex_url_entries.find((entry) => getRegex(entry.regexString).exec(project) !== null )?.uri;
+    const result = plugin.settings.project_regex_url_entries.find((entry) => new RegExp(entry.regexString).exec(project) !== null )?.uri;
+    if (result !== undefined) uriCache.set(project, result);
+    return result;
 }
 
 let context: {

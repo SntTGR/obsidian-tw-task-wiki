@@ -39,7 +39,6 @@
                 new Notice(`Task ${shortUuid(v)} created.`);
                 lastCreatedUuid = v;
                 createdUuids.push({ uuid: v, description: cmd });
-                plugin.emitter!.emit(TaskEvents.REFRESH);
             },
             (err) => {
                 new Notice(`Error creating task: ${err}`);
@@ -62,7 +61,6 @@
             (_) => {
                 new Notice(`Task ${shortUuid(lastCreatedUuid!)} modified.`);
                 createdUuids[createdUuids.findIndex((e) => e.uuid === lastCreatedUuid)]['description'] = cmd;
-                plugin.emitter!.emit(TaskEvents.REFRESH);
             },
             (err) => {
                 new Notice(`Error modifying task: ${err}`);
@@ -79,7 +77,6 @@
                 new Notice(`Task ${shortUuid(uuid)} deleted.`);
                 createdUuids = createdUuids.filter((e) => e.uuid !== uuid);
                 if (lastCreatedUuid === uuid) lastCreatedUuid = undefined;
-                plugin.emitter!.emit(TaskEvents.REFRESH);
             },
             (err) => {
                 new Notice(`Error deleting task: ${err}`);

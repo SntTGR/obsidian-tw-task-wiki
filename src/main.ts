@@ -3,7 +3,7 @@ import TaskList from './ui/TaskList.svelte';
 import { CreateTaskModal } from './modals';
 import { TinyEmitter } from 'tiny-emitter';
 import TaskHandler, { TaskEvents } from './task-handler';
-import { TWPluginLogger, sanitize, sanitizeSingleArgument } from './util';
+import { TWPluginLogger, clearUriCache, sanitize, sanitizeSingleArgument } from './util';
 import { SvelteComponent } from 'svelte';
 import { setGlobalContext } from './util';
 import { randomUUID } from 'crypto';
@@ -175,6 +175,7 @@ class TWSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.debug_log)
 				.onChange(async (value) => {
 					this.plugin.settings.debug_log = value;
+					this.plugin.logger?.setDebugMode(value);
 					await this.plugin.saveSettings();
 				}));
 
@@ -203,7 +204,7 @@ class TWSettingTab extends PluginSettingTab {
 				.setPlaceholder('Alt')
 				.setValue(this.plugin.settings.delete_key)
 				.onChange(async (value) => {
-					this.plugin.settings.delete_key= value;
+					this.plugin.settings.delete_key = value;
 					await this.plugin.saveSettings();
 				}));
 
@@ -260,8 +261,7 @@ class TWSettingTab extends PluginSettingTab {
 			}
 		}
 
-		// Project glob urls menu
-
+		// Project regex urls menu
 		new Setting(containerEl)
 			.setName('Enable project urls')
 			.setDesc('Will enable external linking for projects in lists.')
@@ -286,7 +286,7 @@ class TWSettingTab extends PluginSettingTab {
 						})
 				});
 
-			// Display actions
+			// Display regex urls
 			for (const [index, project] of this.plugin.settings.project_regex_url_entries.entries()) {
 				new Setting(containerEl)
 					.addText(text => text
@@ -294,6 +294,7 @@ class TWSettingTab extends PluginSettingTab {
 						.setValue(project.regexString)
 						.onChange(async (value) => {
 							this.plugin.settings.project_regex_url_entries[index].regexString = value
+							clearUriCache();
 							await this.plugin.saveSettings();
 						}))
 					.addText(text => text
@@ -301,6 +302,7 @@ class TWSettingTab extends PluginSettingTab {
 						.setValue(project.uri)
 						.onChange(async (value) => {
 							this.plugin.settings.project_regex_url_entries[index].uri = value
+							clearUriCache();
 							await this.plugin.saveSettings();
 						}))
 					.addButton(button => {
@@ -311,6 +313,7 @@ class TWSettingTab extends PluginSettingTab {
 									const temp = this.plugin.settings.project_regex_url_entries[index - 1];
 									this.plugin.settings.project_regex_url_entries[index - 1] = this.plugin.settings.project_regex_url_entries[index];
 									this.plugin.settings.project_regex_url_entries[index] = temp;
+									clearUriCache();
 									await this.plugin.saveSettings();
 									this.display();
 								}
@@ -324,6 +327,7 @@ class TWSettingTab extends PluginSettingTab {
 									const temp = this.plugin.settings.project_regex_url_entries[index + 1];
 									this.plugin.settings.project_regex_url_entries[index + 1] = this.plugin.settings.project_regex_url_entries[index];
 									this.plugin.settings.project_regex_url_entries[index] = temp;
+									clearUriCache();
 									await this.plugin.saveSettings();
 									this.display();
 								}
@@ -334,6 +338,7 @@ class TWSettingTab extends PluginSettingTab {
 							.setButtonText('-')
 							.onClick(async () => {
 								this.plugin.settings.project_regex_url_entries = this.plugin.settings.project_regex_url_entries.filter(x => x != project)
+								clearUriCache();
 								await this.plugin.saveSettings();
 								this.display();
 							})

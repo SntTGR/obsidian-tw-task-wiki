@@ -3,7 +3,7 @@
     import type TWPlugin from 'src/main';
 	import { TaskEvents } from 'src/task-handler';
 	import { sanitize, shortUuid, type SuggestionPatterns } from 'src/util';
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
 	import SuggestionTextArea from './components/SuggestionTextArea.svelte';
 
     export let close: () => void;
@@ -19,6 +19,7 @@
     let displayedCommandPending: boolean = false;
 
     let details: string | undefined = undefined;
+    let detailElement: HTMLParagraphElement;
 
     let readyToModify: boolean;
     $: { readyToModify = state !== 'loading' && input !== undefined && input !== ''}
@@ -37,7 +38,6 @@
             (_) => {
                 state = 'ok';
                 new Notice(`Task ${shortUuid(task.uuid)} modified.`);
-                plugin.emitter!.emit(TaskEvents.REFRESH);
             },
             (err) => {
                 state = 'error';
@@ -47,8 +47,24 @@
         clearInput();
     }
 
+    function calculateDetailCharacterWidth() {
+        const container = detailElement;
+        const measureChar = document.createElement('span');
+        measureChar.style.fontFamily = 'monospace';
+        measureChar.style.fontSize = '1em';
+        measureChar.style.visibility = 'hidden';
+        measureChar.textContent = 'X';
+
+        container.appendChild(measureChar);
+        const charWidth = measureChar.getBoundingClientRect().width;
+        const containerWidth = container.getBoundingClientRect().width;
+        container.removeChild(measureChar);
+
+        return Math.floor(containerWidth / charWidth);
+    }
+
     async function fetchDetails() {
-        const result = await plugin.handler!.getTaskDetails(task.uuid)
+        const result = await plugin.handler!.getTaskDetails(task.uuid, calculateDetailCharacterWidth())
         if (result.isOk()) {
             details = result.value;
         }        
@@ -60,6 +76,10 @@
         displayedCommand = `task modify ${shortUuid(task.uuid)} ${getSanitizedInput()}`;
         fetchDetails();
         plugin.emitter!.on(TaskEvents.REFRESH, fetchDetails);
+    });
+
+    onDestroy(() => {
+        plugin.emitter!.off(TaskEvents.REFRESH, fetchDetails);
     });
 
     async function copyToClipboard(c: string) {        
@@ -116,10 +136,7 @@
     <p class="command" id="command-to-run">{ displayedCommand }</p>
 
     <div>
-        <!-- details -->
-        {#if details !== undefined}
-            <p class="details">{details}</p>
-        {/if}
+        <p bind:this={detailElement} class="details">{details ? details : 'Fetching...'}</p>
     </div>
 
     <div class="actions-container">
@@ -154,6 +171,7 @@
         font-family: monospace;
         font-size: 1em;
         line-height: 0.9;
+        width: 100%;
         color: var(--text-muted);
         text-wrap: nowrap;
         overflow: hidden;

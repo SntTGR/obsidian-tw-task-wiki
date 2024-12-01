@@ -65,6 +65,7 @@ export default class TaskHandler {
             .andThen(v => {
                 if (v.length === 0) return nt.err(new Error('No task created'));
                 if (v.length > 1) throw nt.err(new Error('Assertion failed: multiple tasks created'));
+                this.plugin.emitter!.emit(TaskEvents.REFRESH);
                 return nt.ok(v[0]);
             })
             .andThen((v) => this.getUuidOfTask(v));
@@ -267,8 +268,9 @@ export default class TaskHandler {
         }
     }
 
-    getTaskDetails(uuid: string): nt.ResultAsync<string, Error> {
-        return this.execTW(['information', uuid]);
+    getTaskDetails(uuid: string, width?: number): nt.ResultAsync<string, Error> {
+        if (!width) return this.execTW(['information', uuid]);
+        else return this.execTW([`rc.defaultwidth:${width}` ,'information', uuid]);
     }
 
     // Helper functions
