@@ -175,6 +175,8 @@
         color: var(--text-muted);
         text-wrap: nowrap;
         overflow: hidden;
+        user-select: text;
+        -webkit-user-select: text;
         white-space: pre;
     }
 

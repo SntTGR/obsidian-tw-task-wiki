@@ -166,6 +166,7 @@ export function matchProjectRegex(project: string): string | undefined {
     if (uriCache.has(project)) return uriCache.get(project);
     const plugin = getGlobalContext();
     if (!plugin.settings.project_urls_enabled) return undefined;
+    // TODO: figure out why this function is skipping cache on first runs.
     const result = plugin.settings.project_regex_url_entries.find((entry) => new RegExp(entry.regexString).exec(project) !== null )?.uri;
     if (result !== undefined) uriCache.set(project, result);
     return result;

@@ -7,7 +7,7 @@
     
     const plugin: TWPlugin = getGlobalContext();
     
-    const uri: string | undefined = matchProjectRegex(project);
+    const uri: string | undefined = project ? matchProjectRegex(project) : undefined;
     
     function textToId6(text: string) {
         return createHash('sha1').update(text).digest().readUint8(0) % 6;
