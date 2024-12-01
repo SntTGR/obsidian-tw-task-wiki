@@ -95,6 +95,8 @@
 
     onMount(() => {
         titleElement.setText('Create New Tasks');
+        input = '';
+        displayedCommand = `task add ${getSanitizedInput()}`;
     });
 
     function closeModal() {
@@ -129,8 +131,8 @@
     }
 
     const patterns: SuggestionPatterns = [
-        { pattern: '+', getList: plugin.handler!.getTagSuggestions },
-        { pattern: 'project:', getList: plugin.handler!.getProjectSuggestions },
+        { pattern: '+', getList: async (_s: string) => plugin.handler!.getTagSuggestions() },
+        { pattern: 'project:', getList: async (_s:string) => plugin.handler!.getProjectSuggestions() },
     ]
 
 </script>

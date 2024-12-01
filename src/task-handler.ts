@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as nt from 'neverthrow';
 import { Notice } from 'obsidian';
+import { shortUuid } from './util';
 
 const asyncExec = promisify(exec);
 
@@ -69,8 +70,8 @@ export default class TaskHandler {
             .andThen((v) => this.getUuidOfTask(v));
     }
 
-    async getTags(): Promise<nt.Result<string[], Error>> {
-        return this.execTW(`_tags`).map( v => v.trim().split('\n').map( s => s.trim() ) );
+    async getTags(uuid?: string): Promise<nt.Result<string[], Error>> {
+        return this.execTW(`_tags${uuid ? ' ' + uuid : ''}`).map( v => v.trim().split('\n').map( s => s.trim() ) );
     }
 
     async getProjects(): Promise<nt.Result<string[], Error>> {
@@ -262,12 +263,16 @@ export default class TaskHandler {
         if (event === TaskEvents.REFRESH) {
             this.cachedTags = undefined;
             this.cachedProjects = undefined;
+            this.cachedTaskTags.clear();
         }
     }
 
+    getTaskDetails(uuid: string): nt.ResultAsync<string, Error> {
+        return this.execTW(['information', uuid]);
+    }
 
     // Helper functions
-    cachedTags: string[] | undefined = [];
+    cachedTags: string[] | undefined = undefined;
     async getTagSuggestions(): Promise<string[]> {        
         if (this.cachedTags === undefined) {
             const res = await this.getTags();
@@ -276,11 +281,11 @@ export default class TaskHandler {
                 return [];
             }
             this.cachedTags = res.value;
-        }
+        }        
         return this.cachedTags;
     }
 
-    cachedProjects: string[] | undefined = [];
+    cachedProjects: string[] | undefined = undefined;
     async getProjectSuggestions(): Promise<string[]> {
         if (this.cachedProjects === undefined) {
             const res = await this.getProjects();
@@ -298,6 +303,20 @@ export default class TaskHandler {
         }
         
         return res.value
+    }
+
+    cachedTaskTags: Map<string, string[]> = new Map();
+    async getTaskTagsSuggestions(uuid: string): Promise<string[]> {
+        if (!this.cachedTaskTags.has(uuid)) {
+            const res = await this.getTags(uuid);
+            if (res.isErr()) {
+                new Notice(`Error getting tags for task ${shortUuid(uuid)}: ${res.error}`);
+                return [];
+            }
+            this.cachedTaskTags.set(uuid, res.value);
+        }        
+        return this.cachedTaskTags.get(uuid)!;
+        
     }
 
 

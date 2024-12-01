@@ -6,6 +6,7 @@
     import { onMount } from 'svelte';
 	import SuggestionTextArea from './components/SuggestionTextArea.svelte';
 
+    export let close: () => void;
 	export let plugin: TWPlugin;
     export let task: { uuid: string, taskName?: string }
     export let titleElement: HTMLElement;
@@ -16,6 +17,8 @@
     let input: string;
     let displayedCommand: string = `task modify ${shortUuid(task.uuid)}`;
     let displayedCommandPending: boolean = false;
+
+    let details: string | undefined = undefined;
 
     let readyToModify: boolean;
     $: { readyToModify = state !== 'loading' && input !== undefined && input !== ''}
@@ -44,9 +47,19 @@
         clearInput();
     }
 
+    async function fetchDetails() {
+        const result = await plugin.handler!.getTaskDetails(task.uuid)
+        if (result.isOk()) {
+            details = result.value;
+        }        
+    }
+
     onMount(() => {
         titleElement.setText(`Modify task ${task.taskName || shortUuid(task.uuid)}`);
         input = inputValue || '';
+        displayedCommand = `task modify ${shortUuid(task.uuid)} ${getSanitizedInput()}`;
+        fetchDetails();
+        plugin.emitter!.on(TaskEvents.REFRESH, fetchDetails);
     });
 
     async function copyToClipboard(c: string) {        
@@ -54,10 +67,15 @@
         new Notice('Copied to clipboard');
     }
 
+    async function deleteTask() {
+        const result = await plugin.handler?.deleteTask(task.uuid);
+        if (result?.isOk) close();
+    }
+
     const patterns: SuggestionPatterns = [
-        { pattern: '-', getList: async (_s : string) => [] }, // TODO:
-        { pattern: '+', getList: plugin.handler!.getTagSuggestions },
-        { pattern: 'project:', getList: plugin.handler!.getProjectSuggestions },
+        { pattern: '-',         getList: async (_s : string) => plugin.handler!.getTaskTagsSuggestions(task.uuid) }, // TODO:
+        { pattern: '+',         getList: async (_s: string) => plugin.handler!.getTagSuggestions() },
+        { pattern: 'project:',  getList: async (_s:string) => plugin.handler!.getProjectSuggestions() },
     ];
 
 </script>
@@ -97,9 +115,16 @@
 
     <p class="command" id="command-to-run">{ displayedCommand }</p>
 
+    <div>
+        <!-- details -->
+        {#if details !== undefined}
+            <p class="details">{details}</p>
+        {/if}
+    </div>
+
     <div class="actions-container">
         <div style="display: flex;">
-            <button class="action-button-error" disabled={state === 'loading'} on:click={() => {}}> {@html getIcon('trash')?.outerHTML} </button>
+            <button class="action-button-error" disabled={state === 'loading'} on:click={deleteTask}> {@html getIcon('trash')?.outerHTML} </button>
         </div>
         <div style="display: flex; margin-left: auto;">
             <button class="uuid-text action-button" on:click={() => copyToClipboard(task.uuid)}>{shortUuid(task.uuid)}<pre> </pre> {@html getIcon('copy')?.outerHTML} </button>
@@ -123,6 +148,16 @@
         margin-left: 5px;
         margin-right: 5px;
         color: var(--text-error);
+    }
+
+    .details {
+        font-family: monospace;
+        font-size: 1em;
+        line-height: 0.9;
+        color: var(--text-muted);
+        text-wrap: nowrap;
+        overflow: hidden;
+        white-space: pre;
     }
 
     .command {

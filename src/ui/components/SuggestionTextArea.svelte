@@ -1,7 +1,8 @@
 <script lang="ts">
     import { createHash } from 'crypto';
-	import type { SuggestionPatterns } from 'src/util';
-	import { createEventDispatcher } from 'svelte';
+	import type TWPlugin from 'src/main';
+	import { getGlobalContext, type SuggestionPatterns } from 'src/util';
+	import { createEventDispatcher, onMount } from 'svelte';
 	const dispatch = createEventDispatcher();
 
     let suggestions: string[] = [];
@@ -9,6 +10,8 @@
 	let suggestionBoxAdjustmentPending: boolean = false;
 	let selectedIndex: number = -1;
 	let suggestionEscaped: boolean = false;
+
+	const plugin: TWPlugin = getGlobalContext();
 
 	export let patterns: SuggestionPatterns;
 	export let value: string;
@@ -21,6 +24,11 @@
 
     let inputElement: HTMLTextAreaElement;
     let inputAdjustmentPending: boolean = false;
+
+	onMount(() => {
+		inputElement.value = value;
+		recalculateSuggestionBox();
+	})
     
 	function getSuggestions(incoming: string, all: string[]): string[] {
 		return all
@@ -140,20 +148,17 @@
 			const word = value.substring(start, cursor);
 
 			let endPos = end;
-			if (word.startsWith("+")) {
+			
+			// Find the current pattern
+			const patternIndex = patterns.findIndex(({ pattern }) => word.startsWith(pattern));
+
+			if (patternIndex !== -1) {
 				value =
 					value.substring(0, start) +
-					"+" +
+					patterns[patternIndex].pattern +
 					suggestions[selectedIndex] +
 					value.substring(end);
-				endPos = start + suggestions[selectedIndex].length + 1;
-			} else if (word.startsWith("project:")) {
-				value =
-					value.substring(0, start) +
-					"project:" +
-					suggestions[selectedIndex] +
-					value.substring(end);
-				endPos = start + suggestions[selectedIndex].length + 8;
+				endPos = start + patterns[patternIndex].pattern.length + suggestions[selectedIndex].length;
 			}
 
 			inputElement.value = value;
@@ -188,7 +193,7 @@
             
             if (isSuggestionsValid()) {
 				if (e.key === "Enter" && e.shiftKey === false) {
-                    console.log('Suggestion is valid and trying to enter!')
+                    plugin.logger?.debug_log('Suggestion is valid and trying to enter!')
 
 					applySuggestions();
 					

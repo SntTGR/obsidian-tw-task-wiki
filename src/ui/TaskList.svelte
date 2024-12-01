@@ -135,7 +135,7 @@
 										{:else if reportList.printedColumns[dIndex].type.startsWith('description')}
 											<!-- svelte-ignore a11y-click-events-have-key-events -->
 											<!-- svelte-ignore a11y-no-static-element-interactions -->
-											<div class="no-cell-click cell-text" on:click={ () => { newUpdateModal(task, data).open() } }>{data}</div>
+											<div class="no-cell-click cell-text text-clickeable" on:click={ () => { newUpdateModal(task, data).open() } }>{data}</div>
 										{:else if reportList.printedColumns[dIndex].type.startsWith('urgency')}
 											<Urgency urgency={data}/>
 										{:else if reportList.printedColumns[dIndex].type.startsWith('project')}
@@ -217,6 +217,15 @@
 	.tw-table th, .tw-table .cell-text {
 		min-width: 1ch !important;
 		font-size: var(--font-smaller);
+	}
+
+	.text-clickeable {
+		display: inline-block;
+		cursor: pointer;
+	}
+
+	.text-clickeable:hover {
+		text-decoration: underline;
 	}
 
 	.refresh-button {

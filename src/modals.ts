@@ -69,6 +69,7 @@ export class UpdateTaskModal extends TWPModal {
 		this.ctModal = new TaskModify({
 			target: contentEl,
 			props: {
+				close: () => this.close(),
 				plugin: this.plugin,
                 task: this.task,
 				inputValue: this.inputValue,
