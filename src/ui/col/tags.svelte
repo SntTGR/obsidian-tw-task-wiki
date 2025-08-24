@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from "svelte";
     import { createHash } from 'crypto';
     import { getGlobalContext } from "src/util";
 	import type TWPlugin from "src/main";
@@ -55,12 +54,12 @@
         justify-content: center;
     }
 
-    .accent-1 { color: var(--accent-1); background-color: rgba(var(--accent-1-rgb), 0.1); }
-    .accent-2 { color: var(--accent-2); background-color: rgba(var(--accent-2-rgb), 0.1); }
-    .accent-3 { color: var(--accent-3); background-color: rgba(var(--accent-3-rgb), 0.1); }
-    .accent-4 { color: var(--accent-4); background-color: rgba(var(--accent-4-rgb), 0.1); }
-    .accent-5 { color: var(--accent-5); background-color: rgba(var(--accent-5-rgb), 0.1); }
-    .accent-6 { color: var(--accent-6); background-color: rgba(var(--accent-6-rgb), 0.1); }
+    .accent-1 { color: var(--color-red); background-color: rgba(var(--color-red-rgb), 0.1); }
+    .accent-2 { color: var(--color-orange); background-color: rgba(var(--color-orange-rgb), 0.1); }
+    .accent-3 { color: var(--color-yellow); background-color: rgba(var(--color-yellow-rgb), 0.1); }
+    .accent-4 { color: var(--color-green); background-color: rgba(var(--color-green-rgb), 0.1); }
+    .accent-5 { color: var(--color-cyan); background-color: rgba(var(--color-cyan-rgb), 0.1); }
+    .accent-6 { color: var(--color-blue); background-color: rgba(var(--color-blue-rgb), 0.1); }
 
     .pill-class {
         display: inline-flex;  /* Changed to inline-flex to align items */

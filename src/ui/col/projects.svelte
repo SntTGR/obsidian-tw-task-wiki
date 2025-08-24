@@ -30,12 +30,12 @@
 
 <style>
 
-    .accent-1 { color: var(--accent-1); }
-    .accent-2 { color: var(--accent-2); }
-    .accent-3 { color: var(--accent-3); }
-    .accent-4 { color: var(--accent-4); }
-    .accent-5 { color: var(--accent-5); }
-    .accent-6 { color: var(--accent-6); }
+    .accent-1 { color: var(--color-red); }
+    .accent-2 { color: var(--color-orange); }
+    .accent-3 { color: var(--color-yellow); }
+    .accent-4 { color: var(--color-green); }
+    .accent-5 { color: var(--color-cyan); }
+    .accent-6 { color: var(--color-blue); }
 
     .pill-class a {
         color: inherit;
