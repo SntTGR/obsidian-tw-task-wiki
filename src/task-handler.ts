@@ -86,6 +86,20 @@ export default class TaskHandler {
         return nt.ok(null);
     }
 
+    async startTask(uuid: string) {
+        const result = await this.execTW(`start ${uuid}`);
+        if (result.isErr()) return result;
+        this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
+    }
+
+    async stopTask(uuid: string) {
+        const result = await this.execTW(`stop ${uuid}`);
+        if (result.isErr()) return result;
+        this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
+    }
+    
     async modifyTask(uuid: string, command: string) {
         const result = await this.execTW(`${uuid} modify ${command}`);
         if (result.isErr()) return result;
@@ -154,9 +168,8 @@ export default class TaskHandler {
             ]
         ) as [nt.Result<string[], Error>, nt.Result<string[], Error>]
     
-        if (labels.isErr() || columns.isErr() ) {
-            return nt.errAsync(new Error('Error trying to get columns/labels for report'));
-        }
+        if (labels.isErr()) { return nt.err(labels.error); }
+        if (columns.isErr()) { return nt.err(columns.error); }
     
         const cols = columns.value.filter(p => p.trim() !== '').map( (col, i) => ({ label: labels.value[i], type: col }) )
         

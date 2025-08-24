@@ -15,6 +15,7 @@
 	import Tags from './col/tags.svelte';
 	import Urgency from './col/urgency.svelte';
 	import Project from './col/projects.svelte';
+	import Active from './col/active.svelte';
 	
 	export let report: string;
 	export let sanitizedReport: string;
@@ -130,7 +131,7 @@
 								<Status disabled={task.disabled} status={task.status} altVersion={deleteKeyDown} on:statusChange={(e) => {handleStatusChange(task.uuid, e); task.disabled = true}}/>
 								{#each task.data as data, dIndex}
 									<TaskCell handleClick={() => { newUpdateModal(task).open() }}>
-										{#if reportList.printedColumns[dIndex].type.startsWith('tags')}
+										{#if reportList.printedColumns[dIndex].type === 'tags' || reportList.printedColumns[dIndex].type === 'tags.list'}
 											<Tags uuid={task.uuid} tags={data}/>
 										{:else if reportList.printedColumns[dIndex].type.startsWith('description')}
 											<!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -138,6 +139,8 @@
 											<div class="no-cell-click cell-text text-clickeable" on:click={ () => { newUpdateModal(task, data).open() } }>{data}</div>
 										{:else if reportList.printedColumns[dIndex].type.startsWith('urgency')}
 											<Urgency urgency={data}/>
+										{:else if reportList.printedColumns[dIndex].type === ('start.active')}
+											<Active uuid={task.uuid} taskActive={data === '*'} disabled={task.disabled}/>
 										{:else if reportList.printedColumns[dIndex].type.startsWith('project')}
 											<Project project={data}/>
 										{:else}
