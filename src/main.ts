@@ -40,6 +40,7 @@ interface TWSettings {
 	project_regex_url_entries: ProjectRegexUrl[];
 	tasknote_enabled: boolean;
 	tasknote_folder: string;
+	tasknote_right_click_enabled: boolean;
 }
 
 
@@ -54,6 +55,7 @@ const DEFAULT_SETTINGS: TWSettings = {
 	project_regex_url_entries: [],
 	tasknote_enabled: false,
 	tasknote_folder: 'tasknotes',
+	tasknote_right_click_enabled: false,
 }
 
 class LifeCycleHookMRC extends MarkdownRenderChild {
@@ -316,6 +318,15 @@ class TWSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.tasknote_folder)
 					.onChange(async (value) => {
 						this.plugin.settings.tasknote_folder = value;
+						await this.plugin.saveSettings();
+					}));
+			new Setting(containerEl)
+				.setName('Show in right-click menu')
+				.setDesc('Adds an "Open task note" item to the right-click context menu.')
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.tasknote_right_click_enabled)
+					.onChange(async (value) => {
+						this.plugin.settings.tasknote_right_click_enabled = value;
 						await this.plugin.saveSettings();
 					}));
 		}

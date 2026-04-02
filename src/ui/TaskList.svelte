@@ -127,7 +127,7 @@
 					</thead>
 					<tbody>
 						{#each reportList.tasks as task, tIndex (task.uuid)}
-							<tr class:row-disabled={task.disabled} class="task-hover" on:contextmenu={plugin.settings.right_click_context_menu_enabled ? (event) => showActionMenu(task.uuid, event, plugin): null}>
+							<tr class:row-disabled={task.disabled} class="task-hover" on:contextmenu={(plugin.settings.right_click_context_menu_enabled || plugin.settings.tasknote_right_click_enabled) ? (event) => showActionMenu(task.uuid, event, plugin) : null}>
 								<Status disabled={task.disabled} status={task.status} altVersion={deleteKeyDown} on:statusChange={(e) => {handleStatusChange(task.uuid, e); task.disabled = true}}/>
 								{#each task.data as data, dIndex}
 									<TaskCell handleClick={() => { newUpdateModal(task).open() }}>
