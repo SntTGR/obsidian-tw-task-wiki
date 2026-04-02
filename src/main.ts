@@ -148,7 +148,7 @@ export default class TWPlugin extends Plugin {
 		let file = this.app.vault.getFileByPath(filePath);
 		if (!file) {
 			try { await this.app.vault.createFolder(folder); } catch {}
-			file = await this.app.vault.create(filePath, `---\ntask_uuid: ${uuid}\n---\n\n`);
+			file = await this.app.vault.create(filePath, `---\ntask_uuid: ${uuid}\n---\n`);
 		}
 		const leaf = this.app.workspace.getLeaf(false);
 		await leaf.openFile(file as TFile);
