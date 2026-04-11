@@ -155,7 +155,7 @@
         <p bind:this={detailElement} class="details">{details ? details : 'Fetching...'}</p>
     </div>
 
-    <TaskAnnotations {annotations} taskUuid={task.uuid}/>
+    <TaskAnnotations {annotations} taskUuid={task.uuid} {close}/>
 
     <div class="actions-container">
         <div style="display: flex;">

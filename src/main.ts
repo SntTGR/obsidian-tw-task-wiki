@@ -125,6 +125,11 @@ export default class TWPlugin extends Plugin {
 
 		})
 
+		this.registerHoverLinkSource('tw-task-wiki', {
+			display: 'TW Task Wiki',
+			defaultMod: false,
+		});
+
 		this.registerInterval(window.setInterval(() => this.emitter?.emit(TaskEvents.INTERVAL), 10000));
 		this.addSettingTab(new TWSettingTab(this.app, this));
 	}

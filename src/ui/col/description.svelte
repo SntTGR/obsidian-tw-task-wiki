@@ -1,5 +1,6 @@
 <script lang="ts">
     import LinkedText from '../components/LinkedText.svelte';
+    import AnnotationContent from '../components/AnnotationContent.svelte';
     import { UpdateTaskModal, TaskAnnotationsListModal } from '../../modals';
     import { getDescriptionFormat, parseDescriptionData } from '../utils/description-parser';
 
@@ -42,7 +43,7 @@
                 <!-- svelte-ignore a11y-no-static-element-interactions -->
                 <div on:click={openAnnotationsList} class="inline-annotation">
                     {#if annotation.date}<span class="inline-annotation-date">{annotation.date}</span>{/if}
-                    <span class="inline-annotation-content"><LinkedText text={annotation.content}/></span>
+                    <span class="inline-annotation-content"><AnnotationContent content={annotation.content}/></span>
                 </div>
             {/each}
         </div>

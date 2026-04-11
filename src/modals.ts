@@ -7,10 +7,10 @@ import { getGlobalContext } from "./util";
 
 class TWPModal extends Modal {
     plugin: TWPlugin;
-    
     constructor(app: App, plugin: TWPlugin) {
         super(app);
         this.plugin = plugin;
+        this.modalEl.addClass('tw-task-wiki-modal');
     }
 }
 
@@ -64,6 +64,7 @@ export class TaskAnnotationsListModal extends TWPModal {
 				plugin: this.plugin,
 				taskUuid: this.taskUuid,
 				titleElement: titleEl,
+				close: () => this.close(),
 			}
 		})
 	}

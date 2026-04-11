@@ -8,6 +8,7 @@
     export let plugin: TWPlugin;
     export let taskUuid: string;
     export let titleElement: HTMLElement;
+    export let close: () => void;
 
     let state: 'loading' | 'error' | 'ok' = 'loading';
     let annotations: Annotation[] = [];
@@ -50,7 +51,7 @@
     {:else if state === 'error'}
         <p class="status error">Could not fetch task details.</p>
     {:else}
-        <TaskAnnotations {annotations} {taskUuid} />
+        <TaskAnnotations {annotations} {taskUuid} {close} />
     {/if}
 </div>
 

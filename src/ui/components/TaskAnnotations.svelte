@@ -7,11 +7,12 @@
 
 <script lang="ts">
     import { Notice, getIcon } from 'obsidian';
-    import LinkedText from './LinkedText.svelte';
-    import { resolvePathToVaultFile, openVaultFile, getGlobalContext } from '../../util';
+    import AnnotationContent from './AnnotationContent.svelte';
+    import { getGlobalContext } from '../../util';
 
     export let annotations: Annotation[];
     export let taskUuid: string;
+    export let close: (() => void) | undefined = undefined;
 
     let newAnnotationText = '';
     let busy = false;
@@ -24,11 +25,6 @@
     }
 
     $: if (inputEl && newAnnotationText !== undefined) autoResize();
-
-    const toDisplay = (content: string) => content.replace(/\\n/g, '\n');
-
-    $: displayContents = annotations.map(a => toDisplay(a.content));
-    $: resolvedPaths = annotations.map(a => resolvePathToVaultFile(a.content.trim()));
 
     async function addAnnotation() {
         const text = newAnnotationText.trim();
@@ -56,20 +52,14 @@
 
 <div class="annotations-container">
     <span class="annotations-header">Annotations</span>
-    {#each annotations as annotation, i}
+    {#each annotations as annotation}
     <div class="annotation">
         <div class="annotation-row">
             <span class="annotation-date">{annotation.date}</span>
             <button class="annotation-delete-button" disabled={busy} title="Remove annotation" on:click={() => removeAnnotation(annotation)}>{@html getIcon('trash')?.outerHTML ?? '×'}</button>
         </div>
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <!-- svelte-ignore a11y-no-static-element-interactions -->
         <div class="annotation-content">
-            {#if resolvedPaths[i]}
-                <a class="annotation-vault-link" href={resolvedPaths[i]} on:click|stopPropagation|preventDefault={() => { const p = resolvedPaths[i]; if (p) openVaultFile(p); }}>{displayContents[i]}</a>
-            {:else}
-                <LinkedText text={displayContents[i]} />
-            {/if}
+            <AnnotationContent content={annotation.content} onOpen={close} />
         </div>
     </div>
     {/each}
@@ -180,13 +170,4 @@
         -webkit-user-select: text;
     }
 
-    .annotation-vault-link {
-        cursor: pointer;
-        text-decoration: none;
-        color: var(--link-color, var(--text-accent));
-    }
-
-    .annotation-vault-link:hover {
-        text-decoration: underline;
-    }
 </style>
