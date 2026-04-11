@@ -106,6 +106,21 @@ export default class TaskHandler {
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
         return nt.ok(null);
     }
+
+    async annotateTask(uuid: string, text: string) {
+        const escaped = text.replace(/\n/g, '\\n');
+        const result = await this.execTW(['rc.recurrence.confirmation:0', uuid, 'annotate', escaped]);
+        if (result.isErr()) return result;
+        this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
+    }
+
+    async denotateTask(uuid: string, text: string) {
+        const result = await this.execTW(['rc.recurrence.confirmation:0', uuid, 'denotate', text]);
+        if (result.isErr()) return result;
+        this.plugin.emitter!.emit(TaskEvents.REFRESH);
+        return nt.ok(null);
+    }
     
     async deleteTask(uuid: string) {
         const result = await this.setTaskStatus(uuid, 'deleted');
@@ -284,6 +299,18 @@ export default class TaskHandler {
     getTaskDetails(uuid: string, width?: number): nt.ResultAsync<string, Error> {
         if (!width) return this.execTW(['information', uuid]);
         else return this.execTW([`rc.defaultwidth:${width}` ,'information', uuid]);
+    }
+
+    getTaskAnnotations(uuid: string): nt.ResultAsync<Array<{ entry: string; description: string }>, Error> {
+        return this.execTW([uuid, 'export']).andThen((raw) => {
+            try {
+                const parsed = JSON.parse(raw) as Array<{ annotations?: Array<{ entry: string; description: string }> }>;
+                const annotations = parsed[0]?.annotations ?? [];
+                return nt.okAsync(annotations);
+            } catch (e) {
+                return nt.errAsync(e instanceof Error ? e : new Error(String(e)));
+            }
+        });
     }
 
     // Helper functions

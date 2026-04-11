@@ -5,6 +5,7 @@
 	import { sanitize, shortUuid, type SuggestionPatterns } from 'src/util';
     import { onDestroy, onMount } from 'svelte';
 	import SuggestionTextArea from './components/SuggestionTextArea.svelte';
+	import TaskAnnotations, { type Annotation } from './components/TaskAnnotations.svelte';
 
     export let close: () => void;
 	export let plugin: TWPlugin;
@@ -20,6 +21,7 @@
 
     let details: string | undefined = undefined;
     let detailElement: HTMLParagraphElement;
+    let annotations: Annotation[] = [];
 
     let readyToModify: boolean;
     $: { readyToModify = state !== 'loading' && input !== undefined && input !== ''}
@@ -63,11 +65,25 @@
         return Math.floor(containerWidth / charWidth);
     }
 
+    function formatEntry(entry: string): string {
+        const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(entry);
+        if (!m) return entry;
+        const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]));
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
     async function fetchDetails() {
-        const result = await plugin.handler!.getTaskDetails(task.uuid, calculateDetailCharacterWidth())
-        if (result.isOk()) {
-            details = result.value;
-        }        
+        const [detailsResult, annotationsResult] = await Promise.all([
+            plugin.handler!.getTaskDetails(task.uuid, calculateDetailCharacterWidth()),
+            plugin.handler!.getTaskAnnotations(task.uuid),
+        ]);
+        if (detailsResult.isOk()) {
+            details = detailsResult.value;
+        }
+        if (annotationsResult.isOk()) {
+            annotations = annotationsResult.value.map(a => ({ date: formatEntry(a.entry), content: a.description }));
+        }
     }
 
     onMount(() => {
@@ -138,6 +154,8 @@
     <div>
         <p bind:this={detailElement} class="details">{details ? details : 'Fetching...'}</p>
     </div>
+
+    <TaskAnnotations {annotations} taskUuid={task.uuid}/>
 
     <div class="actions-container">
         <div style="display: flex;">

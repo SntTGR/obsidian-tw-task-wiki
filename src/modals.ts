@@ -1,6 +1,7 @@
 import { App, Modal } from "obsidian";
 import TaskCreate from "./ui/TaskCreate.svelte";
 import TaskModify from './ui/TaskModify.svelte';
+import TaskAnnotationsView from './ui/TaskAnnotationsView.svelte';
 import TWPlugin from './main';
 import { getGlobalContext } from "./util";
 
@@ -39,6 +40,36 @@ export class CreateTaskModal extends TWPModal {
 
 	onClose() {
 		this.ctModal?.$destroy();
+		const {contentEl} = this;
+		contentEl.empty();
+	}
+}
+
+
+export class TaskAnnotationsListModal extends TWPModal {
+	private view: TaskAnnotationsView | undefined;
+	private taskUuid: string;
+
+	constructor(taskUuid: string) {
+		const plugin = getGlobalContext();
+		super(plugin.app, plugin);
+		this.taskUuid = taskUuid;
+	}
+
+	onOpen() {
+		const {titleEl, contentEl} = this;
+		this.view = new TaskAnnotationsView({
+			target: contentEl,
+			props: {
+				plugin: this.plugin,
+				taskUuid: this.taskUuid,
+				titleElement: titleEl,
+			}
+		})
+	}
+
+	onClose() {
+		this.view?.$destroy();
 		const {contentEl} = this;
 		contentEl.empty();
 	}

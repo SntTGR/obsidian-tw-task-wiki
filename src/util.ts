@@ -1,5 +1,7 @@
-import type { App } from "obsidian";
+import { type App, FileSystemAdapter, TFile } from "obsidian";
 import type TWPlugin from "./main";
+import { homedir } from 'os';
+import { normalize, sep } from 'path';
 
 export class TWPluginLogger {
     
@@ -186,4 +188,30 @@ export function setGlobalContext(plugin: TWPlugin) {
 
 export function getGlobalContext(): TWPlugin {
     return context!.plugin;
+}
+
+export function resolvePathToVaultFile(filePath: string): string | null {
+    const trimmed = filePath.trim();
+    let expanded: string;
+    if (trimmed.startsWith('~/')) {
+        expanded = homedir() + trimmed.slice(1);
+    } else if (trimmed.startsWith('/')) {
+        expanded = trimmed;
+    } else {
+        return null;
+    }
+
+    const normalizedExpanded = normalize(expanded);
+    const vaultBase = normalize((getGlobalContext().app.vault.adapter as FileSystemAdapter).getBasePath());
+
+    if (!normalizedExpanded.startsWith(vaultBase + sep)) return null;
+
+    const vaultRelative = normalizedExpanded.slice(vaultBase.length + 1).split(sep).join('/');
+    const file = getGlobalContext().app.vault.getAbstractFileByPath(vaultRelative);
+    if (file instanceof TFile) return vaultRelative;
+    return null;
+}
+
+export function openVaultFile(vaultRelativePath: string): void {
+    getGlobalContext().app.workspace.openLinkText(vaultRelativePath, '');
 }
