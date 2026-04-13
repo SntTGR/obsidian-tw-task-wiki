@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, MarkdownRenderChild, Notice } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, MarkdownRenderChild, Notice, TFile } from 'obsidian';
 import TaskList from './ui/TaskList.svelte';
 import { CreateTaskModal } from './modals';
 import { TinyEmitter } from 'tiny-emitter';
@@ -38,6 +38,9 @@ interface TWSettings {
 	right_click_context_menu_actions: RightClickMenuAction[];
 	project_urls_enabled: boolean;
 	project_regex_url_entries: ProjectRegexUrl[];
+	tasknote_enabled: boolean;
+	tasknote_folder: string;
+	tasknote_right_click_enabled: boolean;
 }
 
 
@@ -49,7 +52,10 @@ const DEFAULT_SETTINGS: TWSettings = {
 	right_click_context_menu_enabled: false,
 	right_click_context_menu_actions: [],
 	project_urls_enabled: false,
-	project_regex_url_entries: []
+	project_regex_url_entries: [],
+	tasknote_enabled: false,
+	tasknote_folder: 'tasknotes',
+	tasknote_right_click_enabled: false,
 }
 
 class LifeCycleHookMRC extends MarkdownRenderChild {
@@ -138,6 +144,19 @@ export default class TWPlugin extends Plugin {
 		this.emitter?.off(TaskEvents.INTERVAL);
 		this.emitter?.off(TaskEvents.REFRESH);
 		this.emitter = undefined;
+	}
+
+	async openTaskNote(uuid: string) {
+		const folder = this.settings.tasknote_folder;
+		const filePath = `${folder}/${uuid}.md`;
+
+		let file = this.app.vault.getFileByPath(filePath);
+		if (!file) {
+			try { await this.app.vault.createFolder(folder); } catch {}
+			file = await this.app.vault.create(filePath, `---\ntask_uuid: ${uuid}\n---\n`);
+		}
+		const leaf = this.app.workspace.getLeaf(false);
+		await leaf.openFile(file as TFile);
 	}
 
 	async loadSettings() {
@@ -278,6 +297,45 @@ class TWSettingTab extends PluginSettingTab {
 					this.display();
 				}));
 		
+		new Setting(containerEl)
+			.setName('Enable tasknote integration')
+			.setDesc('Adds an "Note" option when modifying task.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.tasknote_enabled)
+				.onChange(async (value) => {
+					this.plugin.settings.tasknote_enabled = value;
+					await this.plugin.saveSettings();
+					this.display();
+				}));
+
+		if (this.plugin.settings.tasknote_enabled) {
+			const tasknoteDesc = document.createDocumentFragment();
+			tasknoteDesc.append(
+				'Vault-relative folder where task notes are stored. Compatible with ',
+				tasknoteDesc.createEl('a', { text: 'tasknote', href: 'https://github.com/mikebobroski/tasknote' }),
+				' if you configure it with FOLDER=<this folder>, and EXT=.md.',
+			);
+			new Setting(containerEl)
+				.setName('Tasknote folder')
+				.setDesc(tasknoteDesc)
+				.addText(text => text
+					.setPlaceholder('tasknotes')
+					.setValue(this.plugin.settings.tasknote_folder)
+					.onChange(async (value) => {
+						this.plugin.settings.tasknote_folder = value;
+						await this.plugin.saveSettings();
+					}));
+			new Setting(containerEl)
+				.setName('Show in right-click menu')
+				.setDesc('Adds an "Open task note" item to the right-click context menu.')
+				.addToggle(toggle => toggle
+					.setValue(this.plugin.settings.tasknote_right_click_enabled)
+					.onChange(async (value) => {
+						this.plugin.settings.tasknote_right_click_enabled = value;
+						await this.plugin.saveSettings();
+					}));
+		}
+
 		if(this.plugin.settings.project_urls_enabled) {
 			new Setting(containerEl)
 				.setHeading().setName('Project Regex URIs')

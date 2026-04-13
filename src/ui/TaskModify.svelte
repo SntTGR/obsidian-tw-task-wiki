@@ -163,6 +163,9 @@
         </div>
         <div style="display: flex; margin-left: auto;">
             <button class="uuid-text action-button" on:click={() => copyToClipboard(task.uuid)}>{shortUuid(task.uuid)}<pre> </pre> {@html getIcon('copy')?.outerHTML} </button>
+            {#if plugin.settings.tasknote_enabled}
+                <button class="action-button" on:click={() => { plugin.openTaskNote(task.uuid); close(); }}>{@html getIcon('file-text')?.outerHTML} Note</button>
+            {/if}
             <button class="action-button" disabled={!readyToModify} on:click={() => modifyTask(getSanitizedInput())}>Modify</button>
         </div>
     </div>
