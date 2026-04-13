@@ -197,6 +197,9 @@ export function resolvePathToVaultFile(filePath: string): string | null {
         expanded = homedir() + trimmed.slice(1);
     } else if (trimmed.startsWith('/')) {
         expanded = trimmed;
+    } else if (/\.[^./\s]+$/.test(trimmed)) {
+        const file = getGlobalContext().app.vault.getAbstractFileByPath(trimmed);
+        return file instanceof TFile ? trimmed : null;
     } else {
         return null;
     }

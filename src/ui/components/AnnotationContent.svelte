@@ -3,12 +3,24 @@
     import { resolvePathToVaultFile, openVaultFile, getGlobalContext } from '../../util';
 
     export let content: string;
+    export let taskUuid: string | undefined = undefined;
     export let onOpen: (() => void) | undefined = undefined;
 
     const toDisplay = (c: string) => c.replace(/\\n/g, '\n');
 
     $: displayContent = toDisplay(content);
     $: resolvedPath = resolvePathToVaultFile(content.trim());
+
+    const plugin = getGlobalContext();
+    $: tasknotePath = (() => {
+        if (!taskUuid) return undefined;
+        const s = plugin.settings;
+        if (!s.tasknote_enabled) return undefined;
+        const prefix = s.tasknote_annotation_prefix;
+        if (!prefix) return undefined;
+        if (!content.trim().startsWith(prefix)) return undefined;
+        return `${s.tasknote_folder}/${taskUuid}.md`;
+    })();
 
     function triggerHoverPreview(event: MouseEvent, path: string) {
         if (!path.toLowerCase().endsWith('.md')) return;
@@ -31,7 +43,17 @@
     }
 </script>
 
-{#if resolvedPath}
+{#if tasknotePath}
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <a
+        class="vault-link"
+        href={tasknotePath}
+        on:click={(e) => { const p = tasknotePath; if (p) handleClick(e, p); }}
+        on:mouseover={(e) => { const p = tasknotePath; if (p) triggerHoverPreview(e, p); }}
+        on:focus={() => {}}
+    >Note</a>
+{:else if resolvedPath}
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-static-element-interactions -->
     <a

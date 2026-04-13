@@ -40,7 +40,8 @@ interface TWSettings {
 	project_regex_url_entries: ProjectRegexUrl[];
 	tasknote_enabled: boolean;
 	tasknote_folder: string;
-	tasknote_right_click_enabled: boolean;
+	tasknote_right_click_context_menu_action: boolean;
+	tasknote_annotation_prefix: string;
 }
 
 
@@ -55,7 +56,8 @@ const DEFAULT_SETTINGS: TWSettings = {
 	project_regex_url_entries: [],
 	tasknote_enabled: false,
 	tasknote_folder: 'tasknotes',
-	tasknote_right_click_enabled: false,
+	tasknote_right_click_context_menu_action: false,
+	tasknote_annotation_prefix: '[tasknote]',
 }
 
 class LifeCycleHookMRC extends MarkdownRenderChild {
@@ -152,8 +154,11 @@ export default class TWPlugin extends Plugin {
 
 		let file = this.app.vault.getFileByPath(filePath);
 		if (!file) {
-			try { await this.app.vault.createFolder(folder); } catch {}
+			if (!this.app.vault.getAbstractFileByPath(folder)) {
+				await this.app.vault.createFolder(folder);
+			}
 			file = await this.app.vault.create(filePath, `---\ntask_uuid: ${uuid}\n---\n`);
+			await this.handler?.annotateTask(uuid, this.settings.tasknote_annotation_prefix);
 		}
 		const leaf = this.app.workspace.getLeaf(false);
 		await leaf.openFile(file as TFile);
@@ -257,6 +262,20 @@ class TWSettingTab extends PluginSettingTab {
 			});
 
 			// Display actions
+			const openTaskNoteSetting = new Setting(containerEl)
+				.setName('Open task note')
+				.setDesc('Built-in action that creates/opens a note for the task. Requires tasknote integration to be enabled.')
+				.addToggle(toggle => toggle
+					.setDisabled(!this.plugin.settings.tasknote_enabled)
+					.setValue(this.plugin.settings.tasknote_right_click_context_menu_action)
+					.onChange(async (value) => {
+						this.plugin.settings.tasknote_right_click_context_menu_action = value;
+						await this.plugin.saveSettings();
+					}));
+			if (!this.plugin.settings.tasknote_enabled) {
+				openTaskNoteSetting.settingEl.style.opacity = '0.5';
+			}
+
 			for (const [index, action] of this.plugin.settings.right_click_context_menu_actions.entries()) {
 				new Setting(containerEl)
 					.addText(text => text
@@ -285,21 +304,10 @@ class TWSettingTab extends PluginSettingTab {
 			}
 		}
 
-		// Project regex urls menu
 		new Setting(containerEl)
-			.setName('Enable project urls')
-			.setDesc('Will enable external linking for projects in lists.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.project_urls_enabled)
-				.onChange(async (value) => {
-					this.plugin.settings.project_urls_enabled = value;
-					await this.plugin.saveSettings();
-					this.display();
-				}));
-		
-		new Setting(containerEl)
-			.setName('Enable tasknote integration')
-			.setDesc('Adds an "Note" option when modifying task.')
+			.setHeading()
+			.setName('Tasknote integration')
+			.setDesc('Integrates with tasknote plugin to create and link notes to tasks.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.tasknote_enabled)
 				.onChange(async (value) => {
@@ -326,15 +334,31 @@ class TWSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					}));
 			new Setting(containerEl)
-				.setName('Show in right-click menu')
-				.setDesc('Adds an "Open task note" item to the right-click context menu.')
-				.addToggle(toggle => toggle
-					.setValue(this.plugin.settings.tasknote_right_click_enabled)
+				.setName('Tasknote annotation prefix')
+				.setDesc('Prefix used on a task annotation to mark it as the tasknote link. Added automatically when creating a note.')
+				.addText(text => text
+					.setPlaceholder('[tasknote]')
+					.setValue(this.plugin.settings.tasknote_annotation_prefix)
 					.onChange(async (value) => {
-						this.plugin.settings.tasknote_right_click_enabled = value;
+						this.plugin.settings.tasknote_annotation_prefix = value;
 						await this.plugin.saveSettings();
 					}));
 		}
+
+
+		// Project regex urls menu
+		new Setting(containerEl)
+			.setHeading()
+			.setName('Project URLs')
+			.setDesc('Will enable external linking for projects in lists.')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.project_urls_enabled)
+				.onChange(async (value) => {
+					this.plugin.settings.project_urls_enabled = value;
+					await this.plugin.saveSettings();
+					this.display();
+				}));
+		
 
 		if(this.plugin.settings.project_urls_enabled) {
 			new Setting(containerEl)

@@ -16,16 +16,16 @@ export function showActionMenu(taskUuid: string, event: MouseEvent, plugin: TWPl
 
 	const menu = new Menu();
 
-	if (plugin.settings.tasknote_right_click_enabled) {
-		menu.addItem((item) =>
-			item
-				.setTitle('Open task note')
-				.setIcon('file-text')
-				.onClick(() => plugin.openTaskNote(taskUuid))
-		);
-	}
-
 	if (plugin.settings.right_click_context_menu_enabled) {
+		if (plugin.settings.tasknote_enabled && plugin.settings.tasknote_right_click_context_menu_action) {
+			menu.addItem((item) =>
+				item
+					.setTitle('Open task note')
+					.setIcon('file-text')
+					.onClick(() => plugin.openTaskNote(taskUuid))
+			);
+		}
+
 		for (const action of plugin.settings.right_click_context_menu_actions.values()) {
 			menu.addItem((item) =>
 				item

@@ -21,7 +21,7 @@
     async function autoResize() {
         if (!inputEl) return;
         inputEl.style.height = 'auto';
-        inputEl.style.height = `${inputEl.scrollHeight}px`;
+        inputEl.style.height = `${inputEl.scrollHeight + 5}px`;
     }
 
     $: if (inputEl && newAnnotationText !== undefined) autoResize();
@@ -59,7 +59,7 @@
             <button class="annotation-delete-button" disabled={busy} title="Remove annotation" on:click={() => removeAnnotation(annotation)}>{@html getIcon('trash')?.outerHTML ?? '×'}</button>
         </div>
         <div class="annotation-content">
-            <AnnotationContent content={annotation.content} onOpen={close} />
+            <AnnotationContent content={annotation.content} taskUuid={taskUuid} onOpen={close} />
         </div>
     </div>
     {/each}
