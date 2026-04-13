@@ -101,7 +101,7 @@ export default class TaskHandler {
     }
     
     async modifyTask(uuid: string, command: string) {
-        const result = await this.execTW(`${uuid} modify ${command}`);
+        const result = await this.execTW(['rc.recurrence.confirmation:0', uuid, 'modify', command]);
         if (result.isErr()) return result;
         this.plugin.emitter!.emit(TaskEvents.REFRESH);
         return nt.ok(null);
